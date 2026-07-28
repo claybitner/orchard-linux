@@ -10,9 +10,9 @@ reviewable overlay.
 ## Goals
 
 - Broadcom Wi-Fi available in the live environment
-- Broadcom support installed in the target system where the upstream installer
-  copies the live package set
-- Intel microcode, NetworkManager, Bluetooth, thermald, mbpfan, TLP, fwupd,
+- Broadcom support explicitly installed in the target system through the
+  upstream Calamares pacstrap flow
+- Intel microcode, NetworkManager, Bluetooth, thermald, fwupd,
   power-profiles-daemon and useful diagnostic tools
 - A first-boot hardware detection service for Intel Macs
 - KDE Plasma defaults arranged in a macOS-like layout
@@ -25,9 +25,9 @@ reviewable overlay.
 2. CachyOS changes its ISO and Calamares layouts over time. The overlay script
    searches for common package-list locations and stops rather than silently
    modifying the wrong file.
-3. `broadcom-wl-dkms` needs matching kernel headers. The script detects kernel
-   packages in the ISO package list and adds the corresponding `-headers`
-   packages when possible.
+3. `broadcom-wl-dkms` needs matching kernel headers. The script detects every
+   kernel in the selected ISO profile, excludes companion module packages, and
+   adds the corresponding `-headers` packages.
 4. The Broadcom `wl` driver supports the common BCM4331/BCM4352/BCM4360 family,
    but not every Broadcom chip ever used by Apple.
 5. Test the ISO from USB before installing. Keep Ethernet or USB phone tethering
@@ -60,7 +60,8 @@ sudo ./build.sh \
   --name macbook-cachyos
 ```
 
-The resulting ISO should appear in the upstream project's `out/` directory.
+The resulting ISO should appear in the upstream project's `out/desktop/`
+directory.
 
 To let the script clone CachyOS automatically:
 
@@ -93,6 +94,7 @@ From the live environment:
 
 ```bash
 sudo macbook-hardware-report
+sudo macbook-diagnostic-bundle
 lspci -nnk | grep -A4 -i network
 lsmod | grep -E '^(wl|b43|brcm)'
 journalctl -b -k | grep -Ei 'broadcom|b43|brcm|firmware|wl'
@@ -110,13 +112,24 @@ The ISO installs:
 - `iwd`
 - `networkmanager`
 
+Current CachyOS Calamares installs a fresh target with `pacstrap`; it does not
+simply copy the live root filesystem. The overlay therefore extends both the
+live profile and Calamares's target package list. Both CachyOS kernels receive
+matching headers in the target system.
+
 The package's own modprobe configuration handles the usual conflicting modules.
-The first-boot service only loads `wl` when a supported Broadcom PCI device is
-present.
+The first-boot service asks modprobe to load `wl` only when a runtime PCI device
+with Broadcom vendor ID `14e4` is present. The driver's PCI aliases remain
+authoritative, and the service does not forcibly unload alternative drivers.
 
 We intentionally do **not** bundle `b43-firmware` from the AUR. That package has
 had source availability and maintenance problems, and the target MacBook models
 are better served by the packaged Broadcom STA driver in most cases.
+
+`mbpfan` is also currently available only from the AUR, so it is not bundled.
+The image uses upstream's `power-profiles-daemon` and does not install or enable
+TLP at the same time. Fan behavior remains a hardware-test item until an
+officially packaged, reproducible option is selected.
 
 ## macOS-like Plasma appearance
 
@@ -170,6 +183,10 @@ Record:
 - audio
 - webcam
 - thermals and fan behaviour
+
+See [docs/UPSTREAM-COMPATIBILITY.md](docs/UPSTREAM-COMPATIBILITY.md) for the
+verified upstream layout and package decisions. Use
+[docs/HARDWARE-TEST.md](docs/HARDWARE-TEST.md) for model test reports.
 
 ## License
 

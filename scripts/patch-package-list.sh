@@ -2,28 +2,13 @@
 set -Eeuo pipefail
 
 ARCHISO="${1:?usage: patch-package-list.sh ARCHISO_DIR}"
+PROFILE="${2:-desktop}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-mapfile -t CANDIDATES < <(
-  find "$ARCHISO" -maxdepth 3 -type f \
-    \( -name 'packages.x86_64' -o -name 'packages.*' -o -name 'Packages-Desktop' \) \
-    | sort
-)
+# shellcheck source=lib/packages.sh
+source "$SCRIPT_DIR/lib/packages.sh"
 
-if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
-  echo "Could not locate an ISO package list under $ARCHISO" >&2
-  exit 1
-fi
-
-# Prefer the main archiso list.
-PKGLIST=""
-for f in "${CANDIDATES[@]}"; do
-  if [[ "$f" == "$ARCHISO/packages.x86_64" ]]; then
-    PKGLIST="$f"
-    break
-  fi
-done
-PKGLIST="${PKGLIST:-${CANDIDATES[0]}}"
-
+PKGLIST="$(find_profile_package_list "$ARCHISO" "$PROFILE")"
 echo "Using package list: $PKGLIST"
 
 PACKAGES=(
@@ -40,8 +25,7 @@ PACKAGES=(
   dmidecode
   intel-ucode
   thermald
-  tlp
-  mbpfan
+  power-profiles-daemon
   fwupd
 )
 
@@ -56,13 +40,10 @@ done
 
 # DKMS needs headers matching every included kernel. Handle common Arch/CachyOS
 # names and avoid accidentally treating an existing -headers package as a kernel.
-mapfile -t KERNELS < <(
-  grep -Ev '^[[:space:]]*(#|$)' "$PKGLIST" |
-    awk '{print $1}' |
-    grep -E '^linux($|-lts$|-zen$|-hardened$|-cachyos([_-].*)?$)' |
-    grep -v -- '-headers$' |
-    sort -u || true
-)
+KERNELS=()
+while IFS= read -r kernel; do
+  [[ -n "$kernel" ]] && KERNELS+=("$kernel")
+done < <(list_kernel_packages "$PKGLIST")
 
 if [[ ${#KERNELS[@]} -eq 0 ]]; then
   echo "WARNING: no kernel package was detected. Adding linux-headers as fallback." >&2

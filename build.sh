@@ -67,8 +67,8 @@ UPSTREAM="$(realpath "$UPSTREAM")"
   exit 1
 }
 
-"$ROOT/scripts/apply-overlay.sh" "$UPSTREAM" "$ISO_NAME"
-"$ROOT/scripts/validate.sh" "$UPSTREAM"
+"$ROOT/scripts/apply-overlay.sh" "$UPSTREAM" "$ISO_NAME" "$PROFILE"
+"$ROOT/scripts/validate.sh" "$UPSTREAM" "$PROFILE"
 
 if [[ $NO_BUILD -eq 1 ]]; then
   echo "Overlay applied and validated. Build skipped."

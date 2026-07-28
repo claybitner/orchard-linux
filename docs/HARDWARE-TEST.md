@@ -49,13 +49,30 @@ lspci -nnk | grep -A4 -Ei 'network|ethernet'
 
 ## Logs
 
-Run:
+At boot, the MacBook service creates:
+
+```bash
+/var/lib/macbook-cachyos/diagnostics.tar.gz
+```
+
+To make a fresh bundle directly on a mounted USB drive:
+
+```bash
+lsblk -f
+sudo macbook-diagnostic-bundle \
+  /run/media/liveuser/YOUR_USB_LABEL/macbook-diagnostics.tar.gz
+```
+
+The bundle contains full PCI IDs, USB devices, loaded modules, rfkill state,
+NetworkManager state, DKMS state, the kernel command line, and current-boot
+journals. Review it for information you do not want to publish, then attach it
+to the GitHub issue.
+
+If an archive is not useful, capture the short text report:
 
 ```bash
 sudo macbook-hardware-report > macbook-report.txt
 ```
-
-Attach `macbook-report.txt` to the GitHub issue.
 
 ## Result
 
@@ -63,3 +80,9 @@ Attach `macbook-report.txt` to the GitHub issue.
 - Blocking problems:
 - Non-blocking problems:
 - Notes:
+
+## Escape-path check
+
+- Boots with the service disabled using
+  `systemd.mask=macbook-firstboot.service`: yes/no
+- Boots with normal CachyOS kernel parameters: yes/no

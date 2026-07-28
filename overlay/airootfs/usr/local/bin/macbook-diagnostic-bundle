@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+archive="${1:-$PWD/macbook-diagnostics-${timestamp}.tar.gz}"
+archive_dir="$(dirname -- "$archive")"
+work_dir="$(mktemp -d)"
+archive_tmp=""
+
+cleanup() {
+  if [[ -d "$work_dir" ]]; then
+    rm -r -- "$work_dir"
+  fi
+  if [[ -n "$archive_tmp" && -e "$archive_tmp" ]]; then
+    rm -f -- "$archive_tmp"
+  fi
+}
+trap cleanup EXIT
+
+install -d "$archive_dir"
+archive_dir="$(cd -- "$archive_dir" && pwd)"
+archive="$archive_dir/$(basename -- "$archive")"
+archive_tmp="$(mktemp "$archive_dir/.macbook-diagnostics.XXXXXX")"
+
+capture() {
+  local output="${1:?missing output file}"
+  shift
+  "$@" > "$work_dir/$output" 2>&1 || true
+}
+
+macbook-hardware-report > "$work_dir/hardware-report.txt" 2>&1 || true
+capture lspci-nnk.txt lspci -Dnnk
+capture usb.txt lsusb
+capture modules.txt lsmod
+capture rfkill.txt rfkill list
+capture networkmanager.txt nmcli device show
+capture dkms.txt dkms status
+capture kernel.txt uname -a
+capture cmdline.txt cat /proc/cmdline
+capture journal-kernel.txt journalctl -b -k --no-pager
+capture journal-system.txt journalctl -b --no-pager
+
+{
+  printf 'generated_utc=%s\n' "$timestamp"
+  printf 'broadcom_vendor_id=14e4\n'
+  printf 'archive_format=tar.gz\n'
+} > "$work_dir/metadata.txt"
+
+tar -C "$work_dir" -czf "$archive_tmp" .
+chmod 0644 "$archive_tmp"
+mv -f -- "$archive_tmp" "$archive"
+archive_tmp=""
+
+printf '%s\n' "$archive"

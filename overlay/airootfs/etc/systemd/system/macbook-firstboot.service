@@ -1,6 +1,7 @@
 [Unit]
 Description=MacBook CachyOS hardware setup
-After=multi-user.target NetworkManager.service
+Wants=NetworkManager.service
+After=NetworkManager.service
 ConditionPathExists=!/var/lib/macbook-cachyos/complete
 
 [Service]
