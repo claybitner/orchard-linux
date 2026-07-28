@@ -119,15 +119,18 @@ jobs:
           grep -qF \
             'CachyOS Calamares configuration extended for MacBook hardware.' \
             /workspace/build.log
-          CONTAINER_SCRIPT
 
-      - name: Generate checksums
-        if: success()
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          cd "$GITHUB_WORKSPACE/CachyOS-Live-ISO/out/desktop"
-          sha256sum -- ./*.iso > SHA256SUMS
+          cd /workspace/CachyOS-Live-ISO/out/desktop
+          mapfile -t iso_files < <(
+            find . -maxdepth 1 -type f -name '*.iso' -print
+          )
+          if [[ ${#iso_files[@]} -ne 1 ]]; then
+            echo "Expected exactly one built ISO, found ${#iso_files[@]}." >&2
+            exit 1
+          fi
+          sha256sum -- "${iso_files[@]}" > SHA256SUMS
+          sha256sum --check SHA256SUMS
+          CONTAINER_SCRIPT
 
       - name: Collect failure diagnostics
         if: failure()
