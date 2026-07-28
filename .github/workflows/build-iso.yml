@@ -63,15 +63,33 @@ jobs:
     needs: syntax
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    container:
-      image: archlinux:base-devel
-      options: --privileged
 
     steps:
-      - name: Configure CachyOS repository
+      - uses: actions/checkout@v6
+
+      - name: Free runner disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          tool-cache: false
+          swap-storage: false
+
+      - name: Build ISO in Arch Linux
         shell: bash
         run: |
           set -Eeuo pipefail
+          df -h /
+          docker run --privileged --rm -i \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            archlinux:base-devel \
+            bash -s <<'CONTAINER_SCRIPT'
+          set -Eeuo pipefail
+
           pacman -Syu --noconfirm
           pacman -S --noconfirm --needed sudo git
           pacman-key --init
@@ -81,76 +99,64 @@ jobs:
           sed -i '/^\[core\]$/i[cachyos]\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n' \
             /etc/pacman.conf
           pacman -Syu --noconfirm
-
-      - uses: actions/checkout@v6
-
-      - name: Install build dependencies
-        shell: bash
-        run: |
-          set -Eeuo pipefail
           pacman -S --noconfirm --needed \
             archiso cachyos-keyring mkinitcpio-archiso \
             rsync squashfs-tools grub
 
-      - name: Clone current CachyOS ISO source
-        shell: bash
-        run: |
-          set -Eeuo pipefail
           git clone --depth 1 \
             https://github.com/CachyOS/CachyOS-Live-ISO.git \
-            /work/CachyOS-Live-ISO
+            /workspace/CachyOS-Live-ISO
 
-      - name: Apply overlay and validate
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          ./build.sh \
-            --upstream /work/CachyOS-Live-ISO \
+          /workspace/build.sh \
+            --upstream /workspace/CachyOS-Live-ISO \
             --name macbook-cachyos \
             --no-build
 
-      - name: Build ISO
-        working-directory: /work/CachyOS-Live-ISO
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          ./buildiso.sh -p desktop -v -w 2>&1 | tee /tmp/build.log
+          cd /workspace/CachyOS-Live-ISO
+          ./buildiso.sh -p desktop -v -w 2>&1 | tee /workspace/build.log
+          grep -qF \
+            'CachyOS Calamares configuration extended for MacBook hardware.' \
+            /workspace/build.log
+          CONTAINER_SCRIPT
 
       - name: Generate checksums
         if: success()
         shell: bash
         run: |
           set -Eeuo pipefail
-          cd /work/CachyOS-Live-ISO/out/desktop
+          cd "$GITHUB_WORKSPACE/CachyOS-Live-ISO/out/desktop"
           sha256sum -- ./*.iso > SHA256SUMS
 
       - name: Collect failure diagnostics
         if: failure()
         shell: bash
         run: |
-          mkdir -p /tmp/diagnostics
-          cp /tmp/build.log /tmp/diagnostics/ 2>/dev/null || true
-          find /work/CachyOS-Live-ISO -maxdepth 3 -type f \
+          mkdir -p "$GITHUB_WORKSPACE/diagnostics"
+          cp "$GITHUB_WORKSPACE/build.log" \
+            "$GITHUB_WORKSPACE/diagnostics/" 2>/dev/null || true
+          cd "$GITHUB_WORKSPACE"
+          find CachyOS-Live-ISO -maxdepth 3 -type f \
             \( -name '*.log' -o -name 'packages*.x86_64' \) \
-            -exec cp --parents {} /tmp/diagnostics/ \; 2>/dev/null || true
+            -exec cp --parents {} diagnostics/ \; 2>/dev/null || true
+          df -h > diagnostics/disk-usage.txt
 
       - name: Upload ISO
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macbook-cachyos-iso
           path: |
-            /work/CachyOS-Live-ISO/out/desktop/*.iso
-            /work/CachyOS-Live-ISO/out/desktop/*.pkgs.txt
-            /work/CachyOS-Live-ISO/out/desktop/SHA256SUMS
+            CachyOS-Live-ISO/out/desktop/*.iso
+            CachyOS-Live-ISO/out/desktop/*.pkgs.txt
+            CachyOS-Live-ISO/out/desktop/SHA256SUMS
           if-no-files-found: error
           retention-days: 7
 
       - name: Upload failure logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-diagnostics
-          path: /tmp/diagnostics
+          path: diagnostics
           if-no-files-found: ignore
           retention-days: 7

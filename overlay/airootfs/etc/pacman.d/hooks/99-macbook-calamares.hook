@@ -7,5 +7,5 @@ Target = cachyos-calamares
 [Action]
 Description = Extending CachyOS Calamares for MacBook hardware
 When = PostTransaction
-Exec = /usr/lib/macbook-cachyos/patch-calamares
+Exec = /usr/bin/bash /usr/lib/macbook-cachyos/patch-calamares
 Depends = bash

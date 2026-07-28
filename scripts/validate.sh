@@ -28,6 +28,14 @@ for f in "${required_files[@]}"; do
   fi
 done
 
+CALAMARES_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/99-macbook-calamares.hook"
+if ! grep -qxF \
+  'Exec = /usr/bin/bash /usr/lib/macbook-cachyos/patch-calamares' \
+  "$CALAMARES_HOOK"; then
+  echo "Calamares hook does not invoke its patch through Bash." >&2
+  fail=1
+fi
+
 CALAMARES_PATCH="$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
 for pkg in \
   broadcom-wl-dkms \

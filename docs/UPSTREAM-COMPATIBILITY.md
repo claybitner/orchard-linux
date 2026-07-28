@@ -37,6 +37,12 @@ Artifacts are written below:
 out/desktop/
 ```
 
+GitHub's standard runner does not have enough free disk for the uncompressed
+root, package cache, and squashfs output at the same time. The workflow reclaims
+unused Android, .NET, Haskell, and other preinstalled SDK space on the ephemeral
+runner, then runs the privileged Arch build in Docker with the repository bind
+mounted for artifact collection.
+
 ## Live package setup
 
 `archiso/pacman.conf` enables the CachyOS repository before Arch `core`, `extra`,
