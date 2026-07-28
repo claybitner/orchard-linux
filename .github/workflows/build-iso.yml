@@ -1,0 +1,127 @@
+name: Build MacBook CachyOS ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "build.sh"
+      - "scripts/**"
+      - "overlay/**"
+      - ".github/workflows/build-iso.yml"
+  pull_request:
+    paths:
+      - "build.sh"
+      - "scripts/**"
+      - "overlay/**"
+      - ".github/workflows/build-iso.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Bash syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          while IFS= read -r -d '' file; do
+            bash -n "$file"
+          done < <(
+            find . -type f \
+              \( -name '*.sh' -o -path './overlay/airootfs/usr/local/bin/*' \
+                 -o -path './overlay/airootfs/usr/lib/macbook-cachyos/*' \) \
+              -print0
+          )
+
+      - name: ShellCheck
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -d '' files < <(
+            find . -type f \
+              \( -name '*.sh' -o -path './overlay/airootfs/usr/local/bin/*' \
+                 -o -path './overlay/airootfs/usr/lib/macbook-cachyos/*' \) \
+              -print0
+          )
+          shellcheck --severity=warning "${files[@]}"
+
+  build:
+    needs: syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm \
+            archiso bash git rsync curl jq \
+            squashfs-tools dosfstools e2fsprogs \
+            grub libisoburn mtools
+
+      - uses: actions/checkout@v4
+
+      - name: Clone current CachyOS ISO source
+        run: |
+          git clone --depth 1 \
+            https://github.com/CachyOS/CachyOS-Live-ISO.git \
+            /work/CachyOS-Live-ISO
+
+      - name: Apply overlay and validate
+        run: |
+          ./build.sh \
+            --upstream /work/CachyOS-Live-ISO \
+            --name macbook-cachyos \
+            --no-build
+
+      - name: Build ISO
+        working-directory: /work/CachyOS-Live-ISO
+        run: |
+          set -Eeuo pipefail
+          ./buildiso.sh -p desktop -v -w 2>&1 | tee /tmp/build.log
+
+      - name: Generate checksums
+        if: success()
+        run: |
+          cd /work/CachyOS-Live-ISO/out
+          sha256sum ./*.iso > SHA256SUMS
+
+      - name: Collect failure diagnostics
+        if: failure()
+        run: |
+          mkdir -p /tmp/diagnostics
+          cp /tmp/build.log /tmp/diagnostics/ 2>/dev/null || true
+          find /work/CachyOS-Live-ISO -maxdepth 3 -type f \
+            \( -name '*.log' -o -name 'packages.x86_64' \) \
+            -exec cp --parents {} /tmp/diagnostics/ \; 2>/dev/null || true
+
+      - name: Upload ISO
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macbook-cachyos-iso
+          path: |
+            /work/CachyOS-Live-ISO/out/*.iso
+            /work/CachyOS-Live-ISO/out/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-diagnostics
+          path: /tmp/diagnostics
+          if-no-files-found: ignore
+          retention-days: 7

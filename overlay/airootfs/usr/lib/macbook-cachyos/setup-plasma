@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+HOME_DIR="${1:-$HOME}"
+
+command -v kwriteconfig6 >/dev/null || exit 0
+
+export HOME="$HOME_DIR"
+CFG="$HOME/.config"
+mkdir -p "$CFG"
+
+# General behaviour
+kwriteconfig6 --file kdeglobals --group KDE --key SingleClick false
+kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 0.85
+kwriteconfig6 --file kwinrc --group Desktops --key Number 4
+kwriteconfig6 --file kwinrc --group Windows --key BorderlessMaximizedWindows true
+kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.kde.krunner,/App,,toggleDisplay"
+
+# Natural scrolling for libinput devices.
+kwriteconfig6 --file kcminputrc --group Libinput --key NaturalScroll true
+
+# Dolphin closer to Finder's simple defaults.
+kwriteconfig6 --file dolphinrc --group General --key ShowFullPath false
+kwriteconfig6 --file dolphinrc --group General --key ShowStatusBar true
+kwriteconfig6 --file dolphinrc --group General --key RememberOpenedTabs true
+
+# Create the panel layout once Plasma is available in a user session.
+AUTOSTART="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART"
+cat > "$AUTOSTART/macbook-plasma-layout.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Apply MacBook Plasma Layout
+Exec=/usr/lib/macbook-cachyos/plasma-layout-once
+X-KDE-autostart-after=panel
+OnlyShowIn=KDE;
+EOF

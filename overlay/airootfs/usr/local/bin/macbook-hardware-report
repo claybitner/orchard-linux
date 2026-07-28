@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -u
+
+echo "MacBook CachyOS hardware report"
+echo "Generated: $(date --iso-8601=seconds)"
+echo
+echo "DMI"
+printf 'Vendor:  '; cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true
+printf 'Product: '; cat /sys/class/dmi/id/product_name 2>/dev/null || true
+printf 'Version: '; cat /sys/class/dmi/id/product_version 2>/dev/null || true
+echo
+echo "Kernel"
+uname -a
+echo
+echo "Network PCI devices"
+lspci -nnk | grep -A4 -Ei 'network|ethernet' || true
+echo
+echo "Loaded wireless modules"
+lsmod | grep -E '^(wl|b43|b43legacy|brcm|bcma|ssb)' || true
+echo
+echo "RFKill"
+rfkill list || true
+echo
+echo "NetworkManager"
+nmcli general status || true
+nmcli device status || true
+echo
+echo "Relevant kernel messages"
+journalctl -b -k --no-pager 2>/dev/null |
+  grep -Ei 'broadcom|b43|brcm|firmware|wl|wifi|wlan' |
+  tail -200 || true

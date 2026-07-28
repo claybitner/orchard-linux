@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+cat <<'EOF'
+This project does not bundle Apple assets or third-party macOS clone themes.
+
+For a more macOS-like appearance, use KDE System Settings:
+  Appearance > Global Theme > Get New...
+  Icons > Get New...
+  Cursors > Get New...
+
+Search for actively maintained themes such as "WhiteSur" or "McMojave", inspect
+their source and licensing, then install through KDE's store interface.
+
+The built-in layout already supplies the top panel, global menu location, bottom
+dock, KRunner on Meta+Space and Finder-like Dolphin defaults.
+EOF

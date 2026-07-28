@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+MARKER="$HOME/.config/macbook-cachyos-plasma-layout-v1"
+[[ -e "$MARKER" ]] && exit 0
+command -v qdbus6 >/dev/null || exit 0
+
+SCRIPT="$(mktemp)"
+trap 'rm -f "$SCRIPT"' EXIT
+
+cat > "$SCRIPT" <<'JAVASCRIPT'
+var all = panels();
+for (var i = 0; i < all.length; i++) {
+    all[i].remove();
+}
+
+var top = new Panel;
+top.location = "top";
+top.height = 30;
+top.addWidget("org.kde.plasma.kickoff");
+top.addWidget("org.kde.plasma.appmenu");
+top.addWidget("org.kde.plasma.panelspacer");
+top.addWidget("org.kde.plasma.systemtray");
+top.addWidget("org.kde.plasma.digitalclock");
+
+var dock = new Panel;
+dock.location = "bottom";
+dock.height = 58;
+dock.hiding = "dodgewindows";
+dock.alignment = "center";
+dock.lengthMode = "fit";
+dock.floating = true;
+dock.addWidget("org.kde.plasma.icontasks");
+JAVASCRIPT
+
+qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "$(cat "$SCRIPT")" || exit 0
+touch "$MARKER"
+rm -f "$HOME/.config/autostart/macbook-plasma-layout.desktop"

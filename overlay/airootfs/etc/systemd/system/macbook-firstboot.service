@@ -1,0 +1,12 @@
+[Unit]
+Description=MacBook CachyOS hardware setup
+After=multi-user.target NetworkManager.service
+ConditionPathExists=!/var/lib/macbook-cachyos/complete
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/macbook-cachyos/firstboot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
