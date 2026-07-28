@@ -58,6 +58,7 @@ jobs:
         run: |
           ./tests/test-package-list.sh
           ./tests/test-calamares-patch.sh
+          ./tests/test-upstream-build-integration.sh
 
   build:
     needs: syntax
@@ -84,6 +85,7 @@ jobs:
           set -Eeuo pipefail
           df -h /
           docker run --privileged --rm -i \
+            --env USER=root \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
             archlinux:base-devel \

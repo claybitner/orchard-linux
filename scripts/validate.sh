@@ -5,6 +5,8 @@ UPSTREAM="${1:?usage: validate.sh UPSTREAM [PROFILE]}"
 PROFILE="${2:-desktop}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ARCHISO="$UPSTREAM/archiso"
+PROFILEDEF="$ARCHISO/profiledef.sh"
+UTIL_ISO="$UPSTREAM/util-iso.sh"
 
 # shellcheck source=lib/packages.sh
 source "$SCRIPT_DIR/lib/packages.sh"
@@ -95,6 +97,30 @@ if grep -RqE 'systemctl enable .* (tlp|mbpfan)\.service' \
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos"; then
   echo "TLP or mbpfan is enabled despite using power-profiles-daemon." >&2
   fail=1
+fi
+
+if [[ ! -f "$PROFILEDEF" ]] || [[ ! -f "$UTIL_ISO" ]]; then
+  echo "Missing upstream ISO naming files." >&2
+  fail=1
+else
+  ISO_NAME="$(sed -nE 's/^iso_name="([^"]+)"$/\1/p' "$PROFILEDEF")"
+  if [[ -z "$ISO_NAME" ]]; then
+    echo "Unable to read the customized iso_name from $PROFILEDEF." >&2
+    fail=1
+  else
+    grep -qxF \
+      "    vars+=(\"$ISO_NAME\") # orchard-linux: ISO filename prefix" \
+      "$UTIL_ISO" || {
+        echo "CachyOS final ISO filename prefix does not match iso_name." >&2
+        fail=1
+      }
+    grep -qF \
+      "    mv \"\$outFolder/\$_profile/$ISO_NAME-\$(date " \
+      "$UTIL_ISO" || {
+        echo "CachyOS raw ISO filename does not match iso_name." >&2
+        fail=1
+      }
+  fi
 fi
 
 if [[ $fail -ne 0 ]]; then
