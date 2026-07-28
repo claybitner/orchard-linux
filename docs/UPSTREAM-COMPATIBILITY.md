@@ -65,19 +65,23 @@ Kernel companion packages such as `*-nvidia-open`, `*-r8125`, `*-zfs`, and
 
 The current `cachyos-calamares` package uses its online `pacstrap` module. The
 installed system is not a copy of the live package set. The overlay therefore
-provides a reviewed `pacstrap.conf` that:
+installs a reviewed pacman post-transaction hook that extends the package-owned
+`pacstrap.conf` after `cachyos-calamares` is installed. This avoids replacing
+package-owned files before pacman runs. The patch:
 
 - installs Broadcom DKMS and headers in the target;
 - installs power-profiles-daemon, not TLP;
 - copies the MacBook services and diagnostics into the target.
 
-The reviewed `services-systemd.conf` enables `macbook-firstboot.service`.
+The same hook extends `services-systemd.conf` to enable
+`macbook-firstboot.service`.
 The service itself requires both `Apple Inc.` firmware vendor identification
 and a `MacBook*` product identifier before making hardware-specific changes.
 
-These overrides were compared with `cachyos-calamares` version `3.4.2-4`.
-Whenever CachyOS changes that package's Calamares configuration, compare and
-refresh both overrides before shipping an ISO.
+The patch was compared with `cachyos-calamares` version `3.4.2-4`. It verifies
+unique anchors from that package and fails rather than guessing if its
+structure changes. Whenever CachyOS changes those anchors, compare and refresh
+the patch before shipping an ISO.
 
 ## Package decisions
 

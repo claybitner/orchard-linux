@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CALAMARES_ROOT="${MACBOOK_CALAMARES_ROOT:-}"
+PACSTRAP="$CALAMARES_ROOT/etc/calamares/modules/pacstrap.conf"
+SERVICES="$CALAMARES_ROOT/etc/calamares/modules/services-systemd.conf"
+
+for config in "$PACSTRAP" "$SERVICES"; do
+  if [[ ! -f "$config" ]]; then
+    echo "Missing expected CachyOS Calamares configuration: $config" >&2
+    exit 1
+  fi
+done
+
+insert_before() {
+  local config="${1:?missing configuration}"
+  local anchor="${2:?missing anchor}"
+  local marker="${3:?missing marker}"
+  local block="${4:?missing block}"
+  local temp
+
+  if grep -qxF "$marker" "$config"; then
+    return 0
+  fi
+  if [[ "$(grep -cxF "$anchor" "$config")" -ne 1 ]]; then
+    echo "Expected exactly one '$anchor' in $config; refusing to patch it." >&2
+    exit 1
+  fi
+
+  temp="$(mktemp "${config}.XXXXXX")"
+  : > "$temp"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == "$anchor" ]]; then
+      printf '%s\n' "$block" >> "$temp"
+    fi
+    printf '%s\n' "$line" >> "$temp"
+  done < "$config"
+  chmod 0644 "$temp"
+  mv -f -- "$temp" "$config"
+}
+
+insert_after() {
+  local config="${1:?missing configuration}"
+  local anchor="${2:?missing anchor}"
+  local marker="${3:?missing marker}"
+  local block="${4:?missing block}"
+  local temp
+
+  if grep -qxF "$marker" "$config"; then
+    return 0
+  fi
+  if [[ "$(grep -cxF "$anchor" "$config")" -ne 1 ]]; then
+    echo "Expected exactly one '$anchor' in $config; refusing to patch it." >&2
+    exit 1
+  fi
+
+  temp="$(mktemp "${config}.XXXXXX")"
+  : > "$temp"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    printf '%s\n' "$line" >> "$temp"
+    if [[ "$line" == "$anchor" ]]; then
+      printf '%s\n' "$block" >> "$temp"
+    fi
+  done < "$config"
+  chmod 0644 "$temp"
+  mv -f -- "$temp" "$config"
+}
+
+PACKAGE_MARKER="  # macbook-cachyos packages"
+PACKAGE_BLOCK="$(cat <<'EOF'
+  # macbook-cachyos packages
+  - broadcom-wl-dkms
+  - dkms
+  - wireless-regdb
+  - networkmanager
+  - iwd
+  - iw
+  - rfkill
+  - pciutils
+  - dmidecode
+  - intel-ucode
+  - thermald
+  - power-profiles-daemon
+  - fwupd
+
+EOF
+)"
+insert_before "$PACSTRAP" "postInstallFiles:" "$PACKAGE_MARKER" "$PACKAGE_BLOCK"
+
+FILES_MARKER="  # macbook-cachyos target files"
+FILES_BLOCK="$(cat <<'EOF'
+
+  # macbook-cachyos target files
+  - "/etc/NetworkManager/conf.d/20-wifi-backend.conf"
+  - "/etc/systemd/system/macbook-firstboot.service"
+  - "/usr/lib/macbook-cachyos/firstboot"
+  - "/usr/lib/macbook-cachyos/plasma-layout-once"
+  - "/usr/lib/macbook-cachyos/setup-plasma"
+  - "/usr/local/bin/macbook-diagnostic-bundle"
+  - "/usr/local/bin/macbook-hardware-report"
+  - "/usr/local/bin/macbook-optional-theme"
+EOF
+)"
+insert_after \
+  "$PACSTRAP" \
+  '  - "/etc/calamares/scripts/btrfs-installation-snapshot"' \
+  "$FILES_MARKER" \
+  "$FILES_BLOCK"
+
+SERVICES_MARKER="   # macbook-cachyos service"
+SERVICES_BLOCK="$(cat <<'EOF'
+
+   # macbook-cachyos service
+   - name: "macbook-firstboot.service"
+     action: "enable"
+     mandatory: true
+EOF
+)"
+insert_before \
+  "$SERVICES" \
+  '   - name: "arch-update-tray.service"' \
+  "$SERVICES_MARKER" \
+  "$SERVICES_BLOCK"
+
+for package in \
+  broadcom-wl-dkms \
+  dkms \
+  linux-cachyos-headers \
+  linux-cachyos-lts-headers \
+  power-profiles-daemon; do
+  if ! grep -qE "^[[:space:]]+- ${package}$" "$PACSTRAP"; then
+    echo "Required target package is absent after patching: $package" >&2
+    exit 1
+  fi
+done
+
+for target_file in \
+  /etc/systemd/system/macbook-firstboot.service \
+  /usr/lib/macbook-cachyos/firstboot \
+  /usr/local/bin/macbook-diagnostic-bundle; do
+  if ! grep -qF "\"$target_file\"" "$PACSTRAP"; then
+    echo "Required target file is absent after patching: $target_file" >&2
+    exit 1
+  fi
+done
+
+if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' "$SERVICES"; then
+  echo "MacBook first-boot service is absent after patching." >&2
+  exit 1
+fi
+
+echo "CachyOS Calamares configuration extended for MacBook hardware."

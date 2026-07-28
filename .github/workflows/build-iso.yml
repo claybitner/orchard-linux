@@ -23,7 +23,7 @@ jobs:
   syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install ShellCheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
@@ -55,7 +55,9 @@ jobs:
 
       - name: Unit tests
         shell: bash
-        run: ./tests/test-package-list.sh
+        run: |
+          ./tests/test-package-list.sh
+          ./tests/test-calamares-patch.sh
 
   build:
     needs: syntax
@@ -80,7 +82,7 @@ jobs:
             /etc/pacman.conf
           pacman -Syu --noconfirm
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install build dependencies
         shell: bash

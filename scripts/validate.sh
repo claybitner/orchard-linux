@@ -11,12 +11,12 @@ source "$SCRIPT_DIR/lib/packages.sh"
 
 fail=0
 required_files=(
-  "$ARCHISO/airootfs/etc/calamares/modules/pacstrap.conf"
-  "$ARCHISO/airootfs/etc/calamares/modules/services-systemd.conf"
+  "$ARCHISO/airootfs/etc/pacman.d/hooks/99-macbook-calamares.hook"
   "$ARCHISO/airootfs/usr/local/bin/macbook-hardware-report"
   "$ARCHISO/airootfs/usr/local/bin/macbook-diagnostic-bundle"
   "$ARCHISO/airootfs/usr/local/bin/macbook-optional-theme"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/setup-plasma"
   "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
 )
@@ -28,16 +28,15 @@ for f in "${required_files[@]}"; do
   fi
 done
 
-CALAMARES_PACSTRAP="$ARCHISO/airootfs/etc/calamares/modules/pacstrap.conf"
-CALAMARES_SERVICES="$ARCHISO/airootfs/etc/calamares/modules/services-systemd.conf"
+CALAMARES_PATCH="$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
 for pkg in \
   broadcom-wl-dkms \
   dkms \
   linux-cachyos-headers \
   linux-cachyos-lts-headers \
   power-profiles-daemon; do
-  grep -qE "^[[:space:]]+- ${pkg}$" "$CALAMARES_PACSTRAP" || {
-    echo "Installed-system package not present in Calamares pacstrap: $pkg" >&2
+  grep -qF "$pkg" "$CALAMARES_PATCH" || {
+    echo "Installed-system package not present in Calamares patch: $pkg" >&2
     fail=1
   }
 done
@@ -46,15 +45,15 @@ for copied_file in \
   /etc/systemd/system/macbook-firstboot.service \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/local/bin/macbook-diagnostic-bundle; do
-  grep -qF "\"$copied_file\"" "$CALAMARES_PACSTRAP" || {
-    echo "Installed-system overlay file not copied by Calamares: $copied_file" >&2
+  grep -qF "\"$copied_file\"" "$CALAMARES_PATCH" || {
+    echo "Installed-system overlay file not copied by Calamares patch: $copied_file" >&2
     fail=1
   }
 done
 
 if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' \
-  "$CALAMARES_SERVICES"; then
-  echo "Calamares does not enable macbook-firstboot.service." >&2
+  "$CALAMARES_PATCH"; then
+  echo "Calamares patch does not enable macbook-firstboot.service." >&2
   fail=1
 fi
 

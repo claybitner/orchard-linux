@@ -18,6 +18,22 @@ if [[ ! "$ISO_NAME" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
 fi
 
 echo "Applying MacBook overlay to: $ARCHISO"
+
+# Remove exact files from earlier overlay revisions. The Calamares files are
+# removed only when they carry this project's old marker; current mkarchiso
+# rejects package-owned files that exist before package installation.
+rm -f -- \
+  "$ARCHISO/airootfs/etc/modprobe.d/macbook-broadcom.conf" \
+  "$ARCHISO/airootfs/etc/tlp.d/20-macbook.conf"
+for stale_calamares in \
+  "$ARCHISO/airootfs/etc/calamares/modules/pacstrap.conf" \
+  "$ARCHISO/airootfs/etc/calamares/modules/services-systemd.conf"; do
+  if [[ -f "$stale_calamares" ]] &&
+    grep -qF 'extended for Intel MacBooks' "$stale_calamares"; then
+    rm -f -- "$stale_calamares"
+  fi
+done
+
 rsync -a "$ROOT/overlay/airootfs/" "$ARCHISO/airootfs/"
 
 "$ROOT/scripts/patch-package-list.sh" "$ARCHISO" "$PROFILE"
