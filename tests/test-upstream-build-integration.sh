@@ -14,6 +14,9 @@ printf '%s\n' linux-cachyos > "$TEST_ROOT/archiso/packages_desktop.x86_64"
 cat > "$TEST_ROOT/archiso/profiledef.sh" <<'EOF'
 #!/usr/bin/env bash
 iso_name="cachyos"
+file_permissions=(
+  ["/usr/local/bin/choose-mirror"]="0:0:755"
+)
 EOF
 cat > "$TEST_ROOT/util-iso.sh" <<'EOF'
 gen_iso_fn(){
@@ -38,6 +41,20 @@ grep -qxF \
 grep -qF \
   '    mv "$outFolder/$_profile/macbook-cachyos-$(date ' \
   "$TEST_ROOT/util-iso.sh"
+for executable_path in \
+  /usr/local/bin/macbook-hardware-report \
+  /usr/local/bin/macbook-diagnostic-bundle \
+  /usr/local/bin/macbook-optional-theme \
+  /usr/lib/macbook-cachyos/firstboot \
+  /usr/lib/macbook-cachyos/patch-calamares \
+  /usr/lib/macbook-cachyos/setup-plasma \
+  /usr/lib/macbook-cachyos/plasma-layout-once; do
+  grep -qxF \
+    "  [\"$executable_path\"]=\"0:0:755\" # orchard-linux: executable overlay" \
+    "$TEST_ROOT/archiso/profiledef.sh"
+done
+[[ "$(grep -cF '# orchard-linux: executable overlay' \
+  "$TEST_ROOT/archiso/profiledef.sh")" -eq 7 ]]
 "$ROOT/scripts/validate.sh" "$TEST_ROOT" desktop
 
 echo "Upstream build integration tests passed."

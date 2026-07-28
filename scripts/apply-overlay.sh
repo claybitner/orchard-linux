@@ -56,6 +56,83 @@ awk -v iso_name="$ISO_NAME" '
 mv -f -- "$PROFILEDEF_TMP" "$PROFILEDEF"
 trap - EXIT
 
+# mkarchiso normalizes files from airootfs unless their final ownership and
+# mode are declared here. Source-tree executable bits alone are not sufficient.
+# Keep this list explicit so live helpers and the copies installed by Calamares
+# remain executable.
+EXECUTABLE_OVERLAY_PATHS=(
+  /usr/local/bin/macbook-hardware-report
+  /usr/local/bin/macbook-diagnostic-bundle
+  /usr/local/bin/macbook-optional-theme
+  /usr/lib/macbook-cachyos/firstboot
+  /usr/lib/macbook-cachyos/patch-calamares
+  /usr/lib/macbook-cachyos/setup-plasma
+  /usr/lib/macbook-cachyos/plasma-layout-once
+)
+
+if [[ "$(grep -c '^file_permissions=($' "$PROFILEDEF")" -ne 1 ]]; then
+  echo "Expected exactly one file_permissions array in $PROFILEDEF; refusing to patch it." >&2
+  exit 1
+fi
+
+PROFILEDEF_PERMISSIONS_TMP="$(mktemp "${PROFILEDEF}.permissions.XXXXXX")"
+trap 'rm -f -- "$PROFILEDEF_PERMISSIONS_TMP"' EXIT
+awk '
+  BEGIN {
+    marker = " # orchard-linux: executable overlay"
+    paths[1] = "/usr/local/bin/macbook-hardware-report"
+    paths[2] = "/usr/local/bin/macbook-diagnostic-bundle"
+    paths[3] = "/usr/local/bin/macbook-optional-theme"
+    paths[4] = "/usr/lib/macbook-cachyos/firstboot"
+    paths[5] = "/usr/lib/macbook-cachyos/patch-calamares"
+    paths[6] = "/usr/lib/macbook-cachyos/setup-plasma"
+    paths[7] = "/usr/lib/macbook-cachyos/plasma-layout-once"
+  }
+  /^file_permissions=\($/ {
+    in_permissions = 1
+    print
+    next
+  }
+  in_permissions && /^\)$/ {
+    for (i = 1; i <= 7; i++) {
+      print "  [\"" paths[i] "\"]=\"0:0:755\"" marker
+    }
+    in_permissions = 0
+    closed_permissions = 1
+    print
+    next
+  }
+  in_permissions {
+    for (i = 1; i <= 7; i++) {
+      prefix = "[\"" paths[i] "\"]="
+      line = $0
+      sub(/^[[:space:]]*/, "", line)
+      if (index(line, prefix) == 1) {
+        next
+      }
+    }
+  }
+  { print }
+  END {
+    if (!closed_permissions) {
+      exit 3
+    }
+  }
+' "$PROFILEDEF" > "$PROFILEDEF_PERMISSIONS_TMP" || {
+  echo "Unable to patch the file_permissions array in $PROFILEDEF." >&2
+  exit 1
+}
+mv -f -- "$PROFILEDEF_PERMISSIONS_TMP" "$PROFILEDEF"
+trap - EXIT
+
+for executable_path in "${EXECUTABLE_OVERLAY_PATHS[@]}"; do
+  permission_rule="  [\"$executable_path\"]=\"0:0:755\" # orchard-linux: executable overlay"
+  if [[ "$(grep -cFx "$permission_rule" "$PROFILEDEF")" -ne 1 ]]; then
+    echo "Executable permission rule missing or duplicated for $executable_path." >&2
+    exit 1
+  fi
+done
+
 # CachyOS' wrapper renames the raw mkarchiso output after the build. Keep that
 # exact, verified integration in sync with the profile's customized iso_name.
 UTIL_ISO="$UPSTREAM/util-iso.sh"

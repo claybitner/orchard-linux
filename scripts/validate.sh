@@ -22,10 +22,27 @@ required_files=(
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/setup-plasma"
   "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
 )
+executable_overlay_paths=(
+  /usr/local/bin/macbook-hardware-report
+  /usr/local/bin/macbook-diagnostic-bundle
+  /usr/local/bin/macbook-optional-theme
+  /usr/lib/macbook-cachyos/firstboot
+  /usr/lib/macbook-cachyos/patch-calamares
+  /usr/lib/macbook-cachyos/setup-plasma
+  /usr/lib/macbook-cachyos/plasma-layout-once
+)
 
 for f in "${required_files[@]}"; do
   if [[ ! -f "$f" ]]; then
     echo "Missing: $f" >&2
+    fail=1
+  fi
+done
+
+for executable_path in "${executable_overlay_paths[@]}"; do
+  permission_rule="  [\"$executable_path\"]=\"0:0:755\" # orchard-linux: executable overlay"
+  if [[ "$(grep -cFx "$permission_rule" "$PROFILEDEF")" -ne 1 ]]; then
+    echo "ArchISO executable permission rule missing or duplicated: $executable_path" >&2
     fail=1
   fi
 done

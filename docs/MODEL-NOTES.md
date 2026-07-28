@@ -14,6 +14,12 @@ Common target families:
 
 These are guidelines, not guarantees.
 
+## Recorded hardware tests
+
+- [MacBookPro10,1 — 2026-07-28](hardware-tests/MacBookPro10,1-2026-07-28.md):
+  BCM4331 `14e4:4331` with Apple subsystem `106b:00ef`; live Wi-Fi connected
+  successfully using `wl`.
+
 Useful commands:
 
 ```bash
