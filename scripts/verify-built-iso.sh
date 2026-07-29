@@ -27,7 +27,6 @@ done
 }
 
 required_log_markers=(
-  "CachyOS Calamares configuration extended for MacBook hardware."
   "Writing to 'stdio:"
   "completed successfully."
   "==> Done [Build ISO]"

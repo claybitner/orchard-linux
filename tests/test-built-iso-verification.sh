@@ -13,7 +13,6 @@ write_success_log() {
   local log_file="${1:?missing log file}"
   local profile="${2:?missing profile}"
   cat > "$log_file" <<'EOF'
-CachyOS Calamares configuration extended for MacBook hardware.
 Writing to 'stdio:/tmp/out/macbook-cachyos.iso' completed successfully.
 ==> Done [Build ISO] macbook-cachyos.iso
 EOF
