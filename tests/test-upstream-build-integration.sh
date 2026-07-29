@@ -41,6 +41,7 @@ gettext() {
   printf '%s\n' "$1"
 }
 
+trap 'trap_exit USR1 "$(gettext "An unknown error has occurred. Exiting...")"' ERR
 trap 'trap_exit EXIT "$(gettext "An unknown error has occurred. Exiting...")"' EXIT
 
 true
@@ -77,8 +78,11 @@ for executable_path in \
 done
 [[ "$(grep -cF '# orchard-linux: executable overlay' \
   "$TEST_ROOT/archiso/profiledef.sh")" -eq 9 ]]
-[[ "$(grep -cF '# orchard-linux: success-aware exit trap' \
+[[ "$(grep -cF '# orchard-linux: removed unconditional EXIT error trap' \
   "$TEST_ROOT/buildiso.sh")" -eq 1 ]]
+grep -qxF \
+  'trap '\''trap_exit USR1 "$(gettext "An unknown error has occurred. Exiting...")"'\'' ERR' \
+  "$TEST_ROOT/buildiso.sh"
 "$TEST_ROOT/buildiso.sh"
 for data_path in \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \

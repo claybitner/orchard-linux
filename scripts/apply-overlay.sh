@@ -201,21 +201,27 @@ trap - EXIT
 # CachyOS currently installs an unconditional EXIT trap that reports a normal,
 # successful return from run_build as an unknown error. Depending on the Bash
 # version, that false error can also become exit status 1 after the finished ISO
-# has been removed from the work directory. Keep ERR and signal handling intact,
-# but make the EXIT handler run only for a genuinely nonzero status.
-EXIT_TRAP_MARKER='# orchard-linux: success-aware exit trap'
+# has been removed from the work directory. The separate ERR trap already
+# handles genuine failures, so remove only the unconditional EXIT handler.
+EXIT_TRAP_MARKER='# orchard-linux: removed unconditional EXIT error trap'
+LEGACY_EXIT_TRAP_MARKER='# orchard-linux: success-aware exit trap'
 DEFAULT_EXIT_TRAP="$(cat <<'EOF'
 trap 'trap_exit EXIT "$(gettext "An unknown error has occurred. Exiting...")"' EXIT
 EOF
 )"
 PATCHED_EXIT_TRAP="$(cat <<'EOF'
-trap 'status=$?; (( status == 0 )) || trap_exit EXIT "$(gettext "An unknown error has occurred. Exiting...")"' EXIT # orchard-linux: success-aware exit trap
+# orchard-linux: removed unconditional EXIT error trap
 EOF
 )"
 
 if grep -qF "$EXIT_TRAP_MARKER" "$BUILDISO"; then
   if [[ "$(grep -cF "$EXIT_TRAP_MARKER" "$BUILDISO")" -ne 1 ]]; then
     echo "Expected exactly one marked EXIT trap in $BUILDISO." >&2
+    exit 1
+  fi
+elif grep -qF "$LEGACY_EXIT_TRAP_MARKER" "$BUILDISO"; then
+  if [[ "$(grep -cF "$LEGACY_EXIT_TRAP_MARKER" "$BUILDISO")" -ne 1 ]]; then
+    echo "Expected exactly one legacy marked EXIT trap in $BUILDISO." >&2
     exit 1
   fi
 elif [[ "$(grep -cFx "$DEFAULT_EXIT_TRAP" "$BUILDISO")" -ne 1 ]]; then
@@ -226,7 +232,9 @@ fi
 BUILDISO_TMP="$(mktemp "${BUILDISO}.XXXXXX")"
 trap 'rm -f -- "$BUILDISO_TMP"' EXIT
 while IFS= read -r line || [[ -n "$line" ]]; do
-  if [[ "$line" == "$DEFAULT_EXIT_TRAP" || "$line" == *"$EXIT_TRAP_MARKER" ]]; then
+  if [[ "$line" == "$DEFAULT_EXIT_TRAP" ||
+    "$line" == *"$EXIT_TRAP_MARKER" ||
+    "$line" == *"$LEGACY_EXIT_TRAP_MARKER" ]]; then
     printf '%s\n' "$PATCHED_EXIT_TRAP"
   else
     printf '%s\n' "$line"

@@ -246,8 +246,8 @@ else
 fi
 
 if [[ -f "$BUILDISO" ]] && [[ "$(grep -cF \
-  '# orchard-linux: success-aware exit trap' "$BUILDISO")" -ne 1 ]]; then
-  echo "CachyOS build entry point lacks the success-aware EXIT trap." >&2
+  '# orchard-linux: removed unconditional EXIT error trap' "$BUILDISO")" -ne 1 ]]; then
+  echo "CachyOS build entry point retains its unconditional EXIT error trap." >&2
   fail=1
 fi
 
