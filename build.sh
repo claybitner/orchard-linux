@@ -68,7 +68,10 @@ UPSTREAM="$(realpath "$UPSTREAM")"
 }
 
 "$ROOT/scripts/apply-overlay.sh" "$UPSTREAM" "$ISO_NAME" "$PROFILE"
-"$ROOT/scripts/validate.sh" "$UPSTREAM" "$PROFILE"
+"$ROOT/scripts/fetch-rounded-corners-source.sh" \
+  "$UPSTREAM/archiso/airootfs/usr/src/orchard"
+MACBOOK_REQUIRE_ROUNDED_SOURCE=1 \
+  "$ROOT/scripts/validate.sh" "$UPSTREAM" "$PROFILE"
 
 if [[ $NO_BUILD -eq 1 ]]; then
   echo "Overlay applied and validated. Build skipped."

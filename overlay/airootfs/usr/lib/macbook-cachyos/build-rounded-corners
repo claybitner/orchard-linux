@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+COMMIT=46b943637f9c1313f2a489c1d4b5e7fa08e01fc1
+ARCHIVE="/usr/src/orchard/KDE-Rounded-Corners-$COMMIT.tar.gz"
+STATE_DIR=/var/lib/macbook-cachyos
+
+product="$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)"
+vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
+if [[ "${MACBOOK_ROUNDED_CORNERS_FORCE:-0}" != 1 ]] &&
+  [[ "$vendor" != "Apple Inc." || "$product" != MacBook* ]]; then
+  exit 0
+fi
+
+if [[ ! -f "$ARCHIVE" ]]; then
+  echo "Rounded-corner source archive is missing: $ARCHIVE" >&2
+  exit 1
+fi
+
+for command in cmake ninja tar; do
+  command -v "$command" >/dev/null || {
+    echo "Cannot build rounded corners; missing command: $command" >&2
+    exit 1
+  }
+done
+
+kwin_version="$(pacman -Q kwin 2>/dev/null | awk '{print $2}')"
+if [[ -z "$kwin_version" ]]; then
+  echo "Cannot determine the installed KWin version." >&2
+  exit 1
+fi
+
+marker="$STATE_DIR/rounded-corners-$kwin_version-$COMMIT"
+wayland_plugin=/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so
+x11_plugin=/usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so
+if [[ -e "$marker" && -f "$wayland_plugin" && -f "$x11_plugin" ]]; then
+  exit 0
+fi
+
+work="$(mktemp -d /var/tmp/orchard-rounded-corners.XXXXXX)"
+cleanup() {
+  rm -r -- "$work"
+}
+trap cleanup EXIT
+
+tar -xzf "$ARCHIVE" -C "$work"
+source_dir="$work/KDE-Rounded-Corners-$COMMIT"
+[[ -f "$source_dir/CMakeLists.txt" ]] || {
+  echo "Rounded-corner source layout is not recognized." >&2
+  exit 1
+}
+
+build_and_install() {
+  local mode="${1:?missing KWin mode}"
+  local build_dir="$work/build-$mode"
+  local -a options=(
+    -B "$build_dir"
+    -S "$source_dir"
+    -G Ninja
+    -DCMAKE_BUILD_TYPE=Release
+    -Wno-author
+  )
+  if [[ "$mode" == x11 ]]; then
+    options+=(-DKWIN_X11=ON)
+  fi
+
+  cmake "${options[@]}"
+  cmake --build "$build_dir"
+  cmake --install "$build_dir"
+}
+
+build_and_install wayland
+build_and_install x11
+
+install -d -m 0755 "$STATE_DIR"
+touch "$marker"
+echo "Rounded corners built for KWin $kwin_version."

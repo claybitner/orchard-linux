@@ -14,23 +14,50 @@ source "$SCRIPT_DIR/lib/packages.sh"
 fail=0
 required_files=(
   "$ARCHISO/airootfs/etc/pacman.d/hooks/99-macbook-calamares.hook"
+  "$ARCHISO/airootfs/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
   "$ARCHISO/airootfs/usr/local/bin/macbook-hardware-report"
   "$ARCHISO/airootfs/usr/local/bin/macbook-diagnostic-bundle"
   "$ARCHISO/airootfs/usr/local/bin/macbook-optional-theme"
+  "$ARCHISO/airootfs/usr/local/bin/orchard-trackpad"
+  "$ARCHISO/airootfs/etc/xdg/autostart/org.orchard.TrackpadApply.desktop"
+  "$ARCHISO/airootfs/etc/environment.d/90-orchard-input.conf"
+  "$ARCHISO/airootfs/usr/share/applications/org.orchard.Trackpad.desktop"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/90-no-suspend.conf"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/build-rounded-corners"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/hid-apple.conf"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/keyd-macos.conf"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/setup-plasma"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/plasma-layout-once"
+  "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json"
+  "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/splash/Splash.qml"
+  "$ARCHISO/airootfs/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg"
   "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
 )
 executable_overlay_paths=(
   /usr/local/bin/macbook-hardware-report
   /usr/local/bin/macbook-diagnostic-bundle
   /usr/local/bin/macbook-optional-theme
+  /usr/local/bin/orchard-trackpad
+  /usr/lib/macbook-cachyos/build-rounded-corners
   /usr/lib/macbook-cachyos/firstboot
   /usr/lib/macbook-cachyos/patch-calamares
   /usr/lib/macbook-cachyos/setup-plasma
   /usr/lib/macbook-cachyos/plasma-layout-once
 )
+
+if [[ "${MACBOOK_REQUIRE_ROUNDED_SOURCE:-0}" == 1 ]]; then
+  rounded_source="$ARCHISO/airootfs/usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz"
+  required_files+=("$rounded_source")
+  if [[ -f "$rounded_source" ]] &&
+    [[ "$(sha256sum "$rounded_source" | awk '{print $1}')" != \
+      1367160e61371f00a2ab95981623f631e20b123e55232ed727d2e4f6467560c8 ]]; then
+    echo "Rounded-corner source archive has the wrong checksum." >&2
+    fail=1
+  fi
+fi
 
 for f in "${required_files[@]}"; do
   if [[ ! -f "$f" ]]; then
@@ -56,22 +83,75 @@ if ! grep -qxF \
 fi
 
 CALAMARES_PATCH="$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
+FIRSTBOOT="$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
+ROUNDED_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
 for pkg in \
+  appmenu-gtk-module \
+  base-devel \
   broadcom-wl-dkms \
+  cmake \
   dkms \
+  extra-cmake-modules \
+  flatpak \
   linux-cachyos-headers \
   linux-cachyos-lts-headers \
-  power-profiles-daemon; do
+  ffmpegthumbs \
+  kdegraphics-thumbnailers \
+  keyd \
+  kimageformats \
+  kio-extras \
+  power-profiles-daemon \
+  papirus-icon-theme \
+  plasma-browser-integration \
+  plasma-x11-session \
+  qt6-imageformats \
+  sddm \
+  shelly \
+  ninja \
+  vulkan-headers \
+  xorg-xinput; do
   grep -qF "$pkg" "$CALAMARES_PATCH" || {
     echo "Installed-system package not present in Calamares patch: $pkg" >&2
     fail=1
   }
 done
 
+for expected_firstboot_setting in \
+  'flatpak remote-add' \
+  '/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf' \
+  '/usr/lib/macbook-cachyos/build-rounded-corners'; do
+  grep -qF "$expected_firstboot_setting" "$FIRSTBOOT" || {
+    echo "First-boot integration is absent: $expected_firstboot_setting" >&2
+    fail=1
+  }
+done
+
+for expected_hook_line in \
+  'Target = kwin' \
+  'Target = kwin-x11' \
+  'Exec = /usr/lib/macbook-cachyos/build-rounded-corners'; do
+  grep -qxF "$expected_hook_line" "$ROUNDED_HOOK" || {
+    echo "Rounded-corner pacman hook is incomplete: $expected_hook_line" >&2
+    fail=1
+  }
+done
+
 for copied_file in \
   /etc/systemd/system/macbook-firstboot.service \
+  /etc/environment.d/90-orchard-input.conf \
+  /usr/lib/macbook-cachyos/90-no-suspend.conf \
+  /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
+  /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
-  /usr/local/bin/macbook-diagnostic-bundle; do
+  /usr/lib/macbook-cachyos/hid-apple.conf \
+  /usr/lib/macbook-cachyos/keyd-macos.conf \
+  /usr/local/bin/macbook-diagnostic-bundle \
+  /usr/local/bin/orchard-trackpad \
+  /etc/xdg/autostart/org.orchard.TrackpadApply.desktop \
+  /usr/share/applications/org.orchard.Trackpad.desktop \
+  /usr/share/applications/org.orchard.Downloads.desktop \
+  /usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json \
+  /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg; do
   grep -qF "\"$copied_file\"" "$CALAMARES_PATCH" || {
     echo "Installed-system overlay file not copied by Calamares patch: $copied_file" >&2
     fail=1
@@ -88,7 +168,31 @@ if ! PKGLIST="$(find_profile_package_list "$ARCHISO" "$PROFILE")"; then
   echo "Unable to validate package list." >&2
   fail=1
 else
-  for pkg in broadcom-wl-dkms dkms networkmanager intel-ucode power-profiles-daemon; do
+  for pkg in \
+    appmenu-gtk-module \
+    base-devel \
+    broadcom-wl-dkms \
+    cmake \
+    dkms \
+    extra-cmake-modules \
+    flatpak \
+    networkmanager \
+    intel-ucode \
+    ffmpegthumbs \
+    kdegraphics-thumbnailers \
+    keyd \
+    kimageformats \
+    kio-extras \
+    power-profiles-daemon \
+    papirus-icon-theme \
+    plasma-browser-integration \
+    plasma-x11-session \
+    qt6-imageformats \
+    sddm \
+    shelly \
+    ninja \
+    vulkan-headers \
+    xorg-xinput; do
     grep -qxF "$pkg" "$PKGLIST" || {
       echo "Package not present: $pkg" >&2
       fail=1

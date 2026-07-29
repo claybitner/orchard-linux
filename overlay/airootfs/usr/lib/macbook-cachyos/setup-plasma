@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+
 HOME_DIR="${1:-$HOME}"
 
 command -v kwriteconfig6 >/dev/null || exit 0
@@ -7,30 +8,331 @@ command -v kwriteconfig6 >/dev/null || exit 0
 export HOME="$HOME_DIR"
 CFG="$HOME/.config"
 mkdir -p "$CFG"
+SYSTEM_WALLPAPER="${MACBOOK_SYSTEM_WALLPAPER:-/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg}"
+USER_WALLPAPER="$HOME/.local/share/wallpapers/orchard-dusk.svg"
+PROFILE_WALLPAPER="$USER_WALLPAPER"
+[[ -f "$PROFILE_WALLPAPER" ]] || PROFILE_WALLPAPER="$SYSTEM_WALLPAPER"
+DECORATION_DIR="${MACBOOK_DECORATION_DIR:-/usr/share/aurorae/themes/OrchardTrafficLights}"
+TOUCHEGG_CONFIG="${MACBOOK_TOUCHEGG_CONFIG:-/usr/lib/macbook-cachyos/touchegg.conf}"
+GTK_TRAFFIC_LIGHTS="${MACBOOK_GTK_TRAFFIC_LIGHTS:-/usr/lib/macbook-cachyos/gtk-traffic-lights.css}"
+LOOK_AND_FEEL_DIR="${MACBOOK_LOOK_AND_FEEL_DIR:-/usr/share/plasma/look-and-feel/org.orchard.desktop}"
 
-# General behaviour
+# Use only redistributable themes and fonts from the Arch/CachyOS repositories.
+if command -v plasma-apply-colorscheme >/dev/null &&
+  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+  plasma-apply-colorscheme BreezeLight >/dev/null 2>&1 || true
+fi
+kwriteconfig6 --file kdeglobals --group General --key ColorScheme BreezeLight
+kwriteconfig6 --file kdeglobals --group General --key AccentColor "52,120,246"
+if [[ -d /usr/share/icons/Papirus ]]; then
+  kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus
+else
+  kwriteconfig6 --file kdeglobals --group Icons --key Theme breeze
+fi
+kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle Breeze
 kwriteconfig6 --file kdeglobals --group KDE --key SingleClick false
 kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 0.85
+kwriteconfig6 --file kdeglobals --group KDE --key ShowDeleteCommand false
+kwriteconfig6 --file plasmarc --group Theme --key name breeze-light
+
+# Inter is a redistributable UI typeface with the compact, neutral proportions
+# users expect from macOS. Retain Noto Sans when the package is unavailable.
+if [[ -f /usr/share/fonts/inter/Inter.ttc || -f /usr/share/fonts/inter/InterVariable.ttf ]]; then
+  for key in font menuFont taskbarFont toolBarFont; do
+    kwriteconfig6 \
+      --file kdeglobals \
+      --group General \
+      --key "$key" \
+      "Inter,10,-1,5,50,0,0,0,0,0"
+  done
+  kwriteconfig6 \
+    --file kdeglobals \
+    --group General \
+    --key smallestReadableFont \
+    "Inter,9,-1,5,50,0,0,0,0,0"
+fi
+kwriteconfig6 \
+  --file kdeglobals \
+  --group General \
+  --key fixed \
+  "Noto Sans Mono,10,-1,5,50,0,0,0,0,0"
+kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme capitaine-cursors
+kwriteconfig6 --file kcminputrc --group Mouse --key cursorSize 24
+
+# macOS-familiar window placement without copying Apple artwork.
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft XIA
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
+if [[ -d "$DECORATION_DIR" ]]; then
+  kwriteconfig6 \
+    --file kwinrc \
+    --group org.kde.kdecoration2 \
+    --key library \
+    org.kde.kwin.aurorae.v2
+  kwriteconfig6 \
+    --file kwinrc \
+    --group org.kde.kdecoration2 \
+    --key theme \
+    __aurorae__svg__OrchardTrafficLights
+fi
 kwriteconfig6 --file kwinrc --group Desktops --key Number 4
+kwriteconfig6 --file kwinrc --group Desktops --key Rows 1
 kwriteconfig6 --file kwinrc --group Windows --key BorderlessMaximizedWindows true
-kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.kde.krunner,/App,,toggleDisplay"
+kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta --delete ""
+kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
+kwriteconfig6 --file kwinrc --group Plugins --key magiclampEnabled true
+kwriteconfig6 --file kwinrc --group Plugins --key overviewEnabled true
+kwriteconfig6 \
+  --file kwinrc \
+  --group Plugins \
+  --key kwin4_effect_shapecornersEnabled \
+  --type bool \
+  true
+kwriteconfig6 --file kwinrc --group Round-Corners --key Size 12
+kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveCornerRadius 12
+kwriteconfig6 \
+  --file kwinrc \
+  --group Round-Corners \
+  --key UseSquircleShape \
+  --type bool \
+  true
+kwriteconfig6 --file kwinrc --group Round-Corners --key Squircleness 0.55
+for outline_key in \
+  OutlineThickness \
+  InactiveOutlineThickness \
+  SecondOutlineThickness \
+  InactiveSecondOutlineThickness; do
+  kwriteconfig6 --file kwinrc --group Round-Corners --key "$outline_key" 0
+done
+kwriteconfig6 \
+  --file kwinrc \
+  --group Round-Corners \
+  --key DisableRoundMaximize \
+  --type bool \
+  true
+kwriteconfig6 \
+  --file kwinrc \
+  --group Round-Corners \
+  --key DisableRoundFullScreen \
+  --type bool \
+  true
+kwriteconfig6 --file kwinrc --group TabBox --key LayoutName big_icons
+kwriteconfig6 --file kwinrc --group TabBox --key ApplicationsMode 0
+kwriteconfig6 --file kwinrc --group TabBox --key MinimizedMode 0
+kwriteconfig6 --file kwinrc --group "Effect-overview" --key BorderActivate 0
+
+# Keep the physical Mac keyboard muscle memory. keyd translates Command to
+# Control for application shortcuts, while these desktop-owned combinations
+# continue to use Meta.
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key Overview \
+  "Ctrl+Up,Meta+W,Toggle Overview"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key Expose \
+  "Ctrl+Down,Ctrl+F9,Toggle Present Windows (Current desktop)"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Switch One Desktop to the Left" \
+  "Ctrl+Left,Meta+Ctrl+Left,Switch One Desktop to the Left"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Switch One Desktop to the Right" \
+  "Ctrl+Right,Meta+Ctrl+Right,Switch One Desktop to the Right"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Window Minimize" \
+  "Meta+M,Meta+PgDown,Minimize Window"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Walk Through Windows" \
+  $'Meta+Tab\tAlt+Tab,Alt+Tab\tMeta+Tab,Walk Through Windows'
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Walk Through Windows (Reverse)" \
+  $'Meta+Shift+Tab\tAlt+Shift+Tab,Alt+Shift+Tab\tMeta+Shift+Tab,Walk Through Windows (Reverse)'
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Walk Through Windows of Current Application" \
+  $'Meta+`\tAlt+`,Alt+`\tMeta+`,Walk Through Windows of Current Application'
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group kwin \
+  --key "Walk Through Windows of Current Application (Reverse)" \
+  $'Meta+~\tAlt+~,Alt+~\tMeta+~,Walk Through Windows of Current Application (Reverse)'
+
+# Spectacle equivalents of Command-Shift-3/4/5.
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group services \
+  --group org.kde.spectacle.desktop \
+  --key FullScreenScreenShot \
+  "Meta+Shift+3"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group services \
+  --group org.kde.spectacle.desktop \
+  --key RectangularRegionScreenShot \
+  "Meta+Shift+4"
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group services \
+  --group org.kde.spectacle.desktop \
+  --key OpenWithoutScreenshot \
+  "Meta+Shift+5"
+
+# KRunner is the native launcher/search palette. Make it float in the center,
+# begin with a clean query, and use the macOS-familiar Command-Space shortcut.
+kwriteconfig6 --file krunnerrc --group General --key FreeFloating true
+kwriteconfig6 --file krunnerrc --group General --key RetainPriorSearch false
+kwriteconfig6 \
+  --file kglobalshortcutsrc \
+  --group org.kde.krunner.desktop \
+  --key _launch \
+  $'Meta+Space\tAlt+Space\tAlt+F2,Alt+Space\tAlt+F2\tSearch,Run Command'
+# Filename-only indexing gives KRunner fast file search without the heavier
+# content extraction workload on older Intel MacBooks.
+kwriteconfig6 --file baloofilerc --group "Basic Settings" --key Indexing-Enabled true
+kwriteconfig6 --file baloofilerc --group General --key "only basic indexing" true
+
+# Match the lock screen to the desktop instead of switching back to the
+# upstream CachyOS artwork.
+kwriteconfig6 --notify --file kscreenlockerrc --group Daemon --key Autolock --type bool false
+kwriteconfig6 --notify --file kscreenlockerrc --group Daemon --key LockOnResume --type bool false
+kwriteconfig6 --notify --file kscreenlockerrc --group Daemon --key RequirePassword --type bool false
+kwriteconfig6 --file kscreenlockerrc --group Daemon --key Timeout 0
+if [[ -f "$PROFILE_WALLPAPER" ]]; then
+  kwriteconfig6 \
+    --file kscreenlockerrc \
+    --group Greeter \
+    --group Wallpaper \
+    --group org.kde.image \
+    --group General \
+    --key Image \
+    "$PROFILE_WALLPAPER"
+  kwriteconfig6 \
+    --file kscreenlockerrc \
+    --group Greeter \
+    --group Wallpaper \
+    --group org.kde.image \
+    --group General \
+    --key PreviewImage \
+    "$PROFILE_WALLPAPER"
+fi
 
 # Natural scrolling for libinput devices.
 kwriteconfig6 --file kcminputrc --group Libinput --key NaturalScroll true
+kwriteconfig6 --file kcminputrc --group Libinput --key TapToClick true
+kwriteconfig6 --file kcminputrc --group Libinput --key DisableWhileTyping true
+kwriteconfig6 --file kcminputrc --group Mouse --key WheelScrollLines 1
 
 # Dolphin closer to Finder's simple defaults.
 kwriteconfig6 --file dolphinrc --group General --key ShowFullPath false
-kwriteconfig6 --file dolphinrc --group General --key ShowStatusBar true
+kwriteconfig6 --file dolphinrc --group General --key ShowFullPathInTitlebar false
+kwriteconfig6 --file dolphinrc --group General --key ShowStatusBar 0
+kwriteconfig6 --file dolphinrc --group General --key ShowZoomSlider true
 kwriteconfig6 --file dolphinrc --group General --key RememberOpenedTabs true
+kwriteconfig6 --file dolphinrc --group General --key GlobalViewProps true
+kwriteconfig6 --file dolphinrc --group General --key SortingChoice 1
+kwriteconfig6 --file dolphinrc --group General --key ShowToolTips true
+kwriteconfig6 --file dolphinrc --group General --key RenameInline true
+kwriteconfig6 --file dolphinrc --group General --key BrowseThroughArchives true
+kwriteconfig6 --file dolphinrc --group General --key OpenExternallyCalledFolderInNewTab true
+kwriteconfig6 --file dolphinrc --group General --key ConfirmClosingMultipleTabs false
+kwriteconfig6 --file dolphinrc --group General --key DoubleClickViewAction none
+kwriteconfig6 --file dolphinrc --group "KFileDialog Settings" --key "Places Icons Auto-resize" false
+kwriteconfig6 --file dolphinrc --group "KFileDialog Settings" --key "Places Icons Static Size" 22
+
+DOLPHIN_GLOBAL="$HOME/.local/share/dolphin/view_properties/global/.directory"
+if [[ ! -e "$DOLPHIN_GLOBAL" ]]; then
+  mkdir -p "$(dirname -- "$DOLPHIN_GLOBAL")"
+  cat > "$DOLPHIN_GLOBAL" <<'EOF'
+[Dolphin]
+PreviewsShown=true
+SortFoldersFirst=true
+ViewMode=0
+Version=4
+
+[Settings]
+HiddenFilesShown=false
+EOF
+fi
+
+# GTK applications can export their menus to Plasma's global menu widget.
+mkdir -p "$HOME/.config/environment.d"
+cat > "$HOME/.config/environment.d/90-orchard-desktop.conf" <<'EOF'
+GTK_MODULES=appmenu-gtk-module
+MOZ_USE_XINPUT2=1
+EOF
+
+# Use the Orchard splash package without replacing the user's broader global
+# theme choices.
+if [[ -d "$LOOK_AND_FEEL_DIR" ]]; then
+  kwriteconfig6 --file ksplashrc --group KSplash --key Engine KSplashQML
+  kwriteconfig6 --file ksplashrc --group KSplash --key Theme org.orchard.desktop
+fi
+
+# Keep GTK applications visually aligned with Plasma.
+for gtk_version in 3.0 4.0; do
+  mkdir -p "$HOME/.config/gtk-$gtk_version"
+  kwriteconfig6 \
+    --file "gtk-$gtk_version/settings.ini" \
+    --group Settings \
+    --key gtk-font-name \
+    "Inter 10"
+  kwriteconfig6 \
+    --file "gtk-$gtk_version/settings.ini" \
+    --group Settings \
+    --key gtk-theme-name \
+    Breeze
+  kwriteconfig6 \
+    --file "gtk-$gtk_version/settings.ini" \
+    --group Settings \
+    --key gtk-icon-theme-name \
+    Papirus
+  kwriteconfig6 \
+    --file "gtk-$gtk_version/settings.ini" \
+    --group Settings \
+    --key gtk-cursor-theme-name \
+    capitaine-cursors
+  kwriteconfig6 \
+    --file "gtk-$gtk_version/settings.ini" \
+    --group Settings \
+    --key gtk-decoration-layout \
+    "close,minimize,maximize:"
+  if [[ -f "$GTK_TRAFFIC_LIGHTS" && ! -e "$HOME/.config/gtk-$gtk_version/gtk.css" ]]; then
+    install -m 0644 "$GTK_TRAFFIC_LIGHTS" "$HOME/.config/gtk-$gtk_version/gtk.css"
+  fi
+done
+
+if [[ -f "$TOUCHEGG_CONFIG" && ! -e "$HOME/.config/touchegg/touchegg.conf" ]]; then
+  mkdir -p "$HOME/.config/touchegg"
+  install -m 0644 "$TOUCHEGG_CONFIG" "$HOME/.config/touchegg/touchegg.conf"
+fi
 
 # Create the panel layout once Plasma is available in a user session.
 AUTOSTART="$HOME/.config/autostart"
 mkdir -p "$AUTOSTART"
+# The MacBook profile is the first-run experience; do not cover it with the
+# generic CachyOS welcome window on every login.
+rm -f "$AUTOSTART/cachyos-hello.desktop"
+LAYOUT_SCRIPT=/usr/lib/macbook-cachyos/plasma-layout-once
+if [[ -x "$HOME/.local/share/macbook-cachyos/plasma-layout-once" ]]; then
+  LAYOUT_SCRIPT="$HOME/.local/share/macbook-cachyos/plasma-layout-once"
+fi
 cat > "$AUTOSTART/macbook-plasma-layout.desktop" <<'EOF'
 [Desktop Entry]
 Type=Application
 Name=Apply MacBook Plasma Layout
-Exec=/usr/lib/macbook-cachyos/plasma-layout-once
 X-KDE-autostart-after=panel
 OnlyShowIn=KDE;
 EOF
+printf 'Exec=%s\n' "$LAYOUT_SCRIPT" >> "$AUTOSTART/macbook-plasma-layout.desktop"

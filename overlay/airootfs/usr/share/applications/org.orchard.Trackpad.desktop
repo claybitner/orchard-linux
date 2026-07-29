@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Orchard Trackpad
+GenericName=Trackpad Settings
+Comment=Adjust precise Apple trackpad scrolling
+Exec=orchard-trackpad settings
+Icon=input-touchpad
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=trackpad;touchpad;scroll;speed;Apple;
+OnlyShowIn=KDE;

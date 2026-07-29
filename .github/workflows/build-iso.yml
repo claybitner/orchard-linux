@@ -35,10 +35,17 @@ jobs:
           while IFS= read -r -d '' file; do
             bash -n "$file"
           done < <(
-            find . -type f \
-              \( -name '*.sh' -o -path './overlay/airootfs/usr/local/bin/*' \
-                 -o -path './overlay/airootfs/usr/lib/macbook-cachyos/*' \) \
-              -print0
+            find . -type f -name '*.sh' -print0
+            printf '%s\0' \
+              ./overlay/airootfs/usr/local/bin/macbook-hardware-report \
+              ./overlay/airootfs/usr/local/bin/macbook-diagnostic-bundle \
+              ./overlay/airootfs/usr/local/bin/macbook-optional-theme \
+              ./overlay/airootfs/usr/local/bin/orchard-trackpad \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/build-rounded-corners \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/firstboot \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/patch-calamares \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/plasma-layout-once
           )
 
       - name: ShellCheck
@@ -46,10 +53,17 @@ jobs:
         run: |
           set -Eeuo pipefail
           mapfile -d '' files < <(
-            find . -type f \
-              \( -name '*.sh' -o -path './overlay/airootfs/usr/local/bin/*' \
-                 -o -path './overlay/airootfs/usr/lib/macbook-cachyos/*' \) \
-              -print0
+            find . -type f -name '*.sh' -print0
+            printf '%s\0' \
+              ./overlay/airootfs/usr/local/bin/macbook-hardware-report \
+              ./overlay/airootfs/usr/local/bin/macbook-diagnostic-bundle \
+              ./overlay/airootfs/usr/local/bin/macbook-optional-theme \
+              ./overlay/airootfs/usr/local/bin/orchard-trackpad \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/build-rounded-corners \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/firstboot \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/patch-calamares \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/plasma-layout-once
           )
           shellcheck --severity=warning "${files[@]}"
 
@@ -58,6 +72,8 @@ jobs:
         run: |
           ./tests/test-package-list.sh
           ./tests/test-calamares-patch.sh
+          ./tests/test-plasma-setup.sh
+          ./tests/test-trackpad-settings.sh
           ./tests/test-upstream-build-integration.sh
 
   build:

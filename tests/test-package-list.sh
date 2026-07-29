@@ -22,9 +22,32 @@ EOF
 "$ROOT/scripts/patch-package-list.sh" "$CURRENT" desktop
 
 for expected in \
+  appmenu-gtk-module \
+  aurorae \
+  base-devel \
   broadcom-wl-dkms \
+  capitaine-cursors \
+  cmake \
+  extra-cmake-modules \
+  flatpak \
+  inter-font \
+  ffmpegthumbs \
+  kdegraphics-thumbnailers \
+  keyd \
+  kimageformats \
+  kio-extras \
   linux-cachyos-headers \
   linux-cachyos-lts-headers \
+  papirus-icon-theme \
+  plasma-browser-integration \
+  plasma-x11-session \
+  qt6-imageformats \
+  sddm \
+  shelly \
+  touchegg \
+  ninja \
+  vulkan-headers \
+  xorg-xinput \
   power-profiles-daemon; do
   grep -qxF "$expected" "$CURRENT/packages_desktop.x86_64"
 done

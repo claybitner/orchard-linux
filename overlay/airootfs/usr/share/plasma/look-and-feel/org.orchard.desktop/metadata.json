@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Orchard Linux contributors"
+            }
+        ],
+        "Description": "Orchard startup experience for Intel MacBooks",
+        "Id": "org.orchard.desktop",
+        "License": "CC0-1.0",
+        "Name": "Orchard"
+    }
+}

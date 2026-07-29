@@ -1,0 +1,38 @@
+/* Original traffic-light styling for GTK client-side decorations. */
+headerbar button.titlebutton,
+.titlebar button.titlebutton {
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  margin: 0 4px;
+  border: 1px solid rgba(0, 0, 0, 0.20);
+  border-radius: 999px;
+  background-image: none;
+  box-shadow: none;
+  color: rgba(40, 40, 40, 0.72);
+}
+
+headerbar button.titlebutton.close,
+.titlebar button.titlebutton.close {
+  background-color: #ff5f57;
+}
+
+headerbar button.titlebutton.minimize,
+.titlebar button.titlebutton.minimize {
+  background-color: #febc2e;
+}
+
+headerbar button.titlebutton.maximize,
+.titlebar button.titlebutton.maximize {
+  background-color: #28c840;
+}
+
+headerbar button.titlebutton:hover,
+.titlebar button.titlebutton:hover {
+  filter: brightness(0.94);
+}
+
+headerbar button.titlebutton:active,
+.titlebar button.titlebutton:active {
+  filter: brightness(0.84);
+}

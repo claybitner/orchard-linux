@@ -139,16 +139,89 @@ The included setup provides:
 - application menu at top-left
 - clock and system tray at top-right
 - floating bottom task manager/dock
-- KRunner shortcut on `Meta+Space`
+- pinned file manager, browser, terminal, editor, settings and Trash launchers
+- Shelly package manager pinned in the dock, with Flatpak and Flathub ready
+- Downloads and Trash launchers at the right side of the dock
+- original redistributable gradient wallpaper
+- Papirus icons from the official repositories, with Breeze fallback
+- original red, yellow and green traffic-light window controls on the left
+- Inter UI typography from the official repositories
+- centered KRunner search palette on `Meta+Space`
+- Command-style copy, paste, undo, close, quit and navigation shortcuts through
+  the officially packaged `keyd`
+- Command-Tab application switching, Command-Backtick window cycling,
+  Command-M minimize and Command-Shift-3/4/5 screenshots
+- macOS-style Control-arrow Mission Control and workspace switching
+- lightweight filename indexing for launcher search
+- Finder-like Dolphin defaults with previews and icon view
+- official image, video and archive preview backends
+- matching desktop, lock-screen, login and startup-splash backgrounds
+- GTK global-menu integration for applications that export a standard menu
+- three-finger Mission Control and workspace gestures on Plasma X11
 - single-click disabled
 - natural scrolling enabled where libinput supports it
+- precise two-finger scrolling on the Apple `bcm5974` trackpad through
+  libinput, with application-side kinetic scrolling where supported
+- an **Orchard Trackpad** settings entry that changes libinput's fractional
+  scroll distance without introducing discrete, choppy wheel steps
+- four-corner window clipping with a macOS-like 12px continuous curve
 - four virtual desktops
 - dark/light colour-scheme hook points
 
 It does not redistribute WhiteSur, Apple icons, San Francisco fonts, or Apple
-wallpapers. Those assets have separate licensing and update concerns. A helper
-is included for installing optional third-party themes after the system is
-online.
+wallpapers. The included traffic lights and wallpaper are original,
+redistributable work; Papirus, Inter and Capitaine provide maintained
+open-source equivalents for the remaining visual assets. A helper is included
+for installing optional third-party themes after the system is online.
+
+True bottom-corner clipping requires a KWin effect rather than an Aurorae
+decoration alone. The build therefore downloads the GPL-3.0
+`KDE-Rounded-Corners` source at the pinned commit
+`46b943637f9c1313f2a489c1d4b5e7fa08e01fc1`, verifies its SHA-256 checksum, and
+copies the source archive into the ISO. First boot compiles both the regular
+KWin and KWin X11 plugins against the exact installed KWin ABI. A pacman hook
+rebuilds them after KWin upgrades. This is an isolated third-party source build,
+not an AUR binary or an unverified package.
+
+To disable the effect without removing it:
+
+```bash
+kwriteconfig6 \
+  --file kwinrc \
+  --group Plugins \
+  --key kwin4_effect_shapecornersEnabled \
+  --type bool \
+  false
+```
+
+Log out and back in after changing the setting. To return the internal
+trackpad to libinput's unmodified defaults, remove
+`/etc/X11/xorg.conf.d/70-bcm5974-libinput.conf` and then log out or reboot.
+
+Shelly and Flatpak come from the signed CachyOS and Arch repositories,
+respectively. Flathub is added system-wide on first boot. Shelly's optional
+native Flatpak backend is not currently published by the configured
+repositories; Shelly can build it on demand, but the ISO does not disguise that
+local build as an official package.
+
+The Command/Option remapping is installed only after first boot verifies Apple
+MacBook DMI data. To temporarily stop it, run
+`sudo systemctl disable --now keyd.service`. Remove
+`/etc/keyd/orchard-macos.conf` to return permanently to standard Linux modifier
+behavior. If a malformed custom keyd configuration ever captures the keyboard,
+keyd's emergency stop chord is Backspace+Escape+Enter.
+
+On Intel/NVIDIA dual-GPU MacBooks, first boot selects SDDM and Plasma X11
+because Plasma Wayland can fail before or immediately after login on that
+hardware. Suspend is also disabled on those models because the legacy NVIDIA
+stack may not resume; critical battery still shuts the machine down.
+Integrated-only models retain the upstream session and suspend defaults.
+
+To restore upstream behavior on a dual-GPU model, remove
+`/etc/sddm.conf.d/99-macbook-x11.conf` and
+`/etc/systemd/logind.conf.d/90-macbook-no-suspend.conf`, then unmask the
+`sleep.target`, `suspend.target`, `hibernate.target`, `hybrid-sleep.target` and
+`suspend-then-hibernate.target` units.
 
 ## Project layout
 

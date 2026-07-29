@@ -45,6 +45,8 @@ for executable_path in \
   /usr/local/bin/macbook-hardware-report \
   /usr/local/bin/macbook-diagnostic-bundle \
   /usr/local/bin/macbook-optional-theme \
+  /usr/local/bin/orchard-trackpad \
+  /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/lib/macbook-cachyos/patch-calamares \
   /usr/lib/macbook-cachyos/setup-plasma \
@@ -54,7 +56,16 @@ for executable_path in \
     "$TEST_ROOT/archiso/profiledef.sh"
 done
 [[ "$(grep -cF '# orchard-linux: executable overlay' \
-  "$TEST_ROOT/archiso/profiledef.sh")" -eq 7 ]]
+  "$TEST_ROOT/archiso/profiledef.sh")" -eq 9 ]]
+for data_path in \
+  /usr/lib/macbook-cachyos/90-no-suspend.conf \
+  /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
+  /usr/lib/macbook-cachyos/gtk-traffic-lights.css \
+  /usr/lib/macbook-cachyos/hid-apple.conf \
+  /usr/lib/macbook-cachyos/keyd-macos.conf \
+  /usr/lib/macbook-cachyos/touchegg.conf; do
+  [[ ! -x "$TEST_ROOT/archiso/airootfs$data_path" ]]
+done
 "$ROOT/scripts/validate.sh" "$TEST_ROOT" desktop
 
 echo "Upstream build integration tests passed."

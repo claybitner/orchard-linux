@@ -64,6 +64,8 @@ EXECUTABLE_OVERLAY_PATHS=(
   /usr/local/bin/macbook-hardware-report
   /usr/local/bin/macbook-diagnostic-bundle
   /usr/local/bin/macbook-optional-theme
+  /usr/local/bin/orchard-trackpad
+  /usr/lib/macbook-cachyos/build-rounded-corners
   /usr/lib/macbook-cachyos/firstboot
   /usr/lib/macbook-cachyos/patch-calamares
   /usr/lib/macbook-cachyos/setup-plasma
@@ -83,10 +85,12 @@ awk '
     paths[1] = "/usr/local/bin/macbook-hardware-report"
     paths[2] = "/usr/local/bin/macbook-diagnostic-bundle"
     paths[3] = "/usr/local/bin/macbook-optional-theme"
-    paths[4] = "/usr/lib/macbook-cachyos/firstboot"
-    paths[5] = "/usr/lib/macbook-cachyos/patch-calamares"
-    paths[6] = "/usr/lib/macbook-cachyos/setup-plasma"
-    paths[7] = "/usr/lib/macbook-cachyos/plasma-layout-once"
+    paths[4] = "/usr/local/bin/orchard-trackpad"
+    paths[5] = "/usr/lib/macbook-cachyos/build-rounded-corners"
+    paths[6] = "/usr/lib/macbook-cachyos/firstboot"
+    paths[7] = "/usr/lib/macbook-cachyos/patch-calamares"
+    paths[8] = "/usr/lib/macbook-cachyos/setup-plasma"
+    paths[9] = "/usr/lib/macbook-cachyos/plasma-layout-once"
   }
   /^file_permissions=\($/ {
     in_permissions = 1
@@ -94,7 +98,7 @@ awk '
     next
   }
   in_permissions && /^\)$/ {
-    for (i = 1; i <= 7; i++) {
+    for (i = 1; i <= 9; i++) {
       print "  [\"" paths[i] "\"]=\"0:0:755\"" marker
     }
     in_permissions = 0
@@ -103,7 +107,7 @@ awk '
     next
   }
   in_permissions {
-    for (i = 1; i <= 7; i++) {
+    for (i = 1; i <= 9; i++) {
       prefix = "[\"" paths[i] "\"]="
       line = $0
       sub(/^[[:space:]]*/, "", line)
@@ -189,9 +193,11 @@ awk \
 mv -f -- "$UTIL_ISO_TMP" "$UTIL_ISO"
 trap - EXIT
 
-# Ensure executable bits survive archive extraction.
-find "$ARCHISO/airootfs/usr/local/bin" -type f -exec chmod 0755 {} +
-find "$ARCHISO/airootfs/usr/lib/macbook-cachyos" -type f -exec chmod 0755 {} +
+# Ensure only actual programs are executable. The same directory also contains
+# CSS, XML and service configuration consumed as data.
+for executable_path in "${EXECUTABLE_OVERLAY_PATHS[@]}"; do
+  chmod 0755 "$ARCHISO/airootfs$executable_path"
+done
 chmod 0644 "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
 
 echo "Overlay applied."

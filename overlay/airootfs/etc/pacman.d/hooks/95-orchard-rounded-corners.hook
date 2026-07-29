@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = kwin
+Target = kwin-x11
+
+[Action]
+Description = Rebuilding Orchard rounded corners for the updated KWin ABI
+When = PostTransaction
+Exec = /usr/lib/macbook-cachyos/build-rounded-corners

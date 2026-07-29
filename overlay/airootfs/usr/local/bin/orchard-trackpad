@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/orchardtrackpadrc"
+DEVICE_NAME=bcm5974
+
+read_setting() {
+  local key="${1:?missing key}"
+  local fallback="${2:?missing fallback}"
+
+  if command -v kreadconfig6 >/dev/null; then
+    kreadconfig6 \
+      --file "$CONFIG_FILE" \
+      --group Trackpad \
+      --key "$key" \
+      --default "$fallback"
+  else
+    printf '%s\n' "$fallback"
+  fi
+}
+
+write_setting() {
+  local key="${1:?missing key}"
+  local value="${2:?missing value}"
+
+  install -d -m 0700 "$(dirname -- "$CONFIG_FILE")"
+  kwriteconfig6 \
+    --file "$CONFIG_FILE" \
+    --group Trackpad \
+    --key "$key" \
+    "$value"
+}
+
+device_id() {
+  xinput list --id-only "$DEVICE_NAME" 2>/dev/null | head -n 1
+}
+
+apply_settings() {
+  local id
+  local speed
+  local distance
+
+  command -v xinput >/dev/null || return 0
+  [[ "${XDG_SESSION_TYPE:-x11}" == x11 ]] || return 0
+
+  id="$(device_id)"
+  [[ -n "$id" ]] || return 0
+  speed="$(read_setting ScrollSpeed natural)"
+  case "$speed" in
+    very-slow) distance=64 ;;
+    slow) distance=52 ;;
+    relaxed) distance=44 ;;
+    natural) distance=36 ;;
+    fast) distance=28 ;;
+    very-fast) distance=20 ;;
+    *) distance=36 ;;
+  esac
+
+  if xinput list-props "$id" 2>/dev/null |
+    grep -q "libinput Scrolling Pixel Distance"; then
+    xinput set-prop \
+      "$id" \
+      "libinput Scrolling Pixel Distance" \
+      "$distance"
+  fi
+
+  # Qt applications use this setting for traditional wheel events. Keep it at
+  # one line so external mice remain controlled without quantizing the
+  # touchpad's fractional libinput events.
+  if command -v kwriteconfig6 >/dev/null; then
+    kwriteconfig6 \
+      --file kcminputrc \
+      --group Mouse \
+      --key WheelScrollLines \
+      1
+  fi
+}
+
+radio_state() {
+  local current="${1:?missing current value}"
+  local choice="${2:?missing choice value}"
+
+  if [[ "$current" == "$choice" ]]; then
+    printf 'on\n'
+  else
+    printf 'off\n'
+  fi
+}
+
+show_settings() {
+  local speed
+
+  if ! command -v kdialog >/dev/null ||
+    ! command -v kwriteconfig6 >/dev/null; then
+    echo "KDialog and kwriteconfig6 are required for the settings window." >&2
+    exit 1
+  fi
+  if [[ -z "$(device_id)" ]]; then
+    kdialog \
+      --error "The internal Apple trackpad (bcm5974) is not available in this session." \
+      --title "Orchard Trackpad"
+    exit 1
+  fi
+
+  speed="$(read_setting ScrollSpeed natural)"
+  speed="$(
+    kdialog \
+      --radiolist "Choose the two-finger scroll speed:" \
+      very-slow "Very slow" "$(radio_state "$speed" very-slow)" \
+      slow "Slow" "$(radio_state "$speed" slow)" \
+      relaxed "Relaxed" "$(radio_state "$speed" relaxed)" \
+      natural "Natural" "$(radio_state "$speed" natural)" \
+      fast "Fast" "$(radio_state "$speed" fast)" \
+      very-fast "Very fast" "$(radio_state "$speed" very-fast)" \
+      --title "Orchard Trackpad"
+  )" || exit 0
+
+  write_setting ScrollSpeed "$speed"
+  apply_settings
+
+  if command -v notify-send >/dev/null; then
+    notify-send \
+      --app-name="Orchard Trackpad" \
+      --icon=input-touchpad \
+      "Trackpad settings saved" \
+      "Scroll speed: ${speed//-/ }."
+  fi
+}
+
+case "${1:-settings}" in
+  --apply | apply)
+    apply_settings
+    ;;
+  --status | status)
+    id="$(device_id)"
+    if [[ -z "$id" ]]; then
+      echo "$DEVICE_NAME is not available in this X11 session." >&2
+      exit 1
+    fi
+    echo "device=$DEVICE_NAME"
+    echo "scroll_speed=$(read_setting ScrollSpeed natural)"
+    xinput list-props "$id" |
+      grep -E "(libinput Scrolling Pixel Distance|Synaptics Scrolling Distance)"
+    ;;
+  settings)
+    show_settings
+    ;;
+  *)
+    echo "usage: orchard-trackpad [settings|apply|status]" >&2
+    exit 2
+    ;;
+esac

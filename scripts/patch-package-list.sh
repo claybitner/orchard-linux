@@ -12,8 +12,15 @@ PKGLIST="$(find_profile_package_list "$ARCHISO" "$PROFILE")"
 echo "Using package list: $PKGLIST"
 
 PACKAGES=(
+  appmenu-gtk-module
+  aurorae
+  base-devel
   broadcom-wl-dkms
+  capitaine-cursors
+  cmake
   dkms
+  extra-cmake-modules
+  flatpak
   linux-firmware
   wireless-regdb
   networkmanager
@@ -27,6 +34,22 @@ PACKAGES=(
   thermald
   power-profiles-daemon
   fwupd
+  ffmpegthumbs
+  inter-font
+  kdegraphics-thumbnailers
+  keyd
+  kimageformats
+  kio-extras
+  papirus-icon-theme
+  plasma-browser-integration
+  plasma-x11-session
+  qt6-imageformats
+  sddm
+  shelly
+  touchegg
+  ninja
+  vulkan-headers
+  xorg-xinput
 )
 
 append_package() {

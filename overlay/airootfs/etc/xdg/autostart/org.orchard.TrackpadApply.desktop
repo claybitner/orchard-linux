@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Apply Orchard Trackpad Settings
+Comment=Restore Apple trackpad scrolling preferences
+Exec=orchard-trackpad apply
+Icon=input-touchpad
+Terminal=false
+OnlyShowIn=KDE;
+NoDisplay=true
+X-KDE-autostart-after=panel

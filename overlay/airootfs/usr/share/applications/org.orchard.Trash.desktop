@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Trash
+Comment=View deleted files
+Exec=dolphin trash:/
+Icon=user-trash-full
+Terminal=false
+Categories=Utility;FileManager;
+NoDisplay=true

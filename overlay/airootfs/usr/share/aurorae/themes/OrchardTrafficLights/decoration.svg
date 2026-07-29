@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <rect id="decoration-topleft" x="0" y="0" width="1" height="1" fill="#d4d4d4"/>
+  <rect id="decoration-top" x="1" y="0" width="32" height="1" fill="#d4d4d4"/>
+  <rect id="decoration-topright" x="33" y="0" width="1" height="1" fill="#d4d4d4"/>
+  <rect id="decoration-left" x="0" y="1" width="1" height="32" fill="#d4d4d4"/>
+  <rect id="decoration-center" x="1" y="1" width="32" height="32" fill="#eeeeee"/>
+  <rect id="decoration-right" x="33" y="1" width="1" height="32" fill="#d4d4d4"/>
+  <rect id="decoration-bottomleft" x="0" y="33" width="1" height="1" fill="#b8b8b8"/>
+  <rect id="decoration-bottom" x="1" y="33" width="32" height="1" fill="#b8b8b8"/>
+  <rect id="decoration-bottomright" x="33" y="33" width="1" height="1" fill="#b8b8b8"/>
+
+  <rect id="decoration-inactive-topleft" x="38" y="0" width="1" height="1" fill="#dddddd"/>
+  <rect id="decoration-inactive-top" x="39" y="0" width="32" height="1" fill="#dddddd"/>
+  <rect id="decoration-inactive-topright" x="71" y="0" width="1" height="1" fill="#dddddd"/>
+  <rect id="decoration-inactive-left" x="38" y="1" width="1" height="32" fill="#dddddd"/>
+  <rect id="decoration-inactive-center" x="39" y="1" width="32" height="32" fill="#f5f5f5"/>
+  <rect id="decoration-inactive-right" x="71" y="1" width="1" height="32" fill="#dddddd"/>
+  <rect id="decoration-inactive-bottomleft" x="38" y="33" width="1" height="1" fill="#c8c8c8"/>
+  <rect id="decoration-inactive-bottom" x="39" y="33" width="32" height="1" fill="#c8c8c8"/>
+  <rect id="decoration-inactive-bottomright" x="71" y="33" width="1" height="1" fill="#c8c8c8"/>
+
+  <rect id="decoration-maximized-center" x="1" y="39" width="32" height="32" fill="#eeeeee"/>
+  <rect id="decoration-maximized-inactive-center" x="39" y="39" width="32" height="32" fill="#f5f5f5"/>
+</svg>

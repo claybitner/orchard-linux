@@ -69,8 +69,15 @@ insert_after() {
 PACKAGE_MARKER="  # macbook-cachyos packages"
 PACKAGE_BLOCK="$(cat <<'EOF'
   # macbook-cachyos packages
+  - appmenu-gtk-module
+  - aurorae
+  - base-devel
   - broadcom-wl-dkms
+  - capitaine-cursors
+  - cmake
   - dkms
+  - extra-cmake-modules
+  - flatpak
   - wireless-regdb
   - networkmanager
   - iwd
@@ -82,6 +89,22 @@ PACKAGE_BLOCK="$(cat <<'EOF'
   - thermald
   - power-profiles-daemon
   - fwupd
+  - ffmpegthumbs
+  - inter-font
+  - kdegraphics-thumbnailers
+  - keyd
+  - kimageformats
+  - kio-extras
+  - papirus-icon-theme
+  - plasma-browser-integration
+  - plasma-x11-session
+  - qt6-imageformats
+  - sddm
+  - shelly
+  - touchegg
+  - ninja
+  - vulkan-headers
+  - xorg-xinput
 
 EOF
 )"
@@ -92,13 +115,40 @@ FILES_BLOCK="$(cat <<'EOF'
 
   # macbook-cachyos target files
   - "/etc/NetworkManager/conf.d/20-wifi-backend.conf"
+  - "/etc/environment.d/90-orchard-input.conf"
+  - "/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
   - "/etc/systemd/system/macbook-firstboot.service"
+  - "/etc/xdg/autostart/org.orchard.TrackpadApply.desktop"
+  - "/usr/lib/macbook-cachyos/90-no-suspend.conf"
+  - "/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf"
+  - "/usr/lib/macbook-cachyos/build-rounded-corners"
   - "/usr/lib/macbook-cachyos/firstboot"
+  - "/usr/lib/macbook-cachyos/gtk-traffic-lights.css"
+  - "/usr/lib/macbook-cachyos/hid-apple.conf"
+  - "/usr/lib/macbook-cachyos/keyd-macos.conf"
   - "/usr/lib/macbook-cachyos/plasma-layout-once"
+  - "/usr/lib/macbook-cachyos/sddm-theme.conf.user"
   - "/usr/lib/macbook-cachyos/setup-plasma"
+  - "/usr/lib/macbook-cachyos/touchegg.conf"
   - "/usr/local/bin/macbook-diagnostic-bundle"
   - "/usr/local/bin/macbook-hardware-report"
   - "/usr/local/bin/macbook-optional-theme"
+  - "/usr/local/bin/orchard-trackpad"
+  - "/usr/share/applications/org.orchard.Trackpad.desktop"
+  - "/usr/share/applications/org.orchard.Trash.desktop"
+  - "/usr/share/applications/org.orchard.Downloads.desktop"
+  - "/usr/share/icons/hicolor/scalable/apps/orchard-menu.svg"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/OrchardTrafficLightsrc"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/close.svg"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/decoration.svg"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/maximize.svg"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/metadata.desktop"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/minimize.svg"
+  - "/usr/share/aurorae/themes/OrchardTrafficLights/restore.svg"
+  - "/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/splash/Splash.qml"
+  - "/usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json"
+  - "/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg"
+  - "/usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz"
 EOF
 )"
 insert_after \
@@ -123,11 +173,34 @@ insert_before \
   "$SERVICES_BLOCK"
 
 for package in \
+  appmenu-gtk-module \
+  aurorae \
+  base-devel \
   broadcom-wl-dkms \
+  capitaine-cursors \
+  cmake \
   dkms \
+  extra-cmake-modules \
+  flatpak \
   linux-cachyos-headers \
   linux-cachyos-lts-headers \
-  power-profiles-daemon; do
+  power-profiles-daemon \
+  ffmpegthumbs \
+  inter-font \
+  kdegraphics-thumbnailers \
+  keyd \
+  kimageformats \
+  kio-extras \
+  papirus-icon-theme \
+  plasma-browser-integration \
+  plasma-x11-session \
+  qt6-imageformats \
+  sddm \
+  shelly \
+  touchegg \
+  ninja \
+  vulkan-headers \
+  xorg-xinput; do
   if ! grep -qE "^[[:space:]]+- ${package}$" "$PACSTRAP"; then
     echo "Required target package is absent after patching: $package" >&2
     exit 1
@@ -135,9 +208,29 @@ for package in \
 done
 
 for target_file in \
+  /etc/pacman.d/hooks/95-orchard-rounded-corners.hook \
   /etc/systemd/system/macbook-firstboot.service \
+  /etc/xdg/autostart/org.orchard.TrackpadApply.desktop \
+  /etc/environment.d/90-orchard-input.conf \
+  /usr/lib/macbook-cachyos/90-no-suspend.conf \
+  /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
+  /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
-  /usr/local/bin/macbook-diagnostic-bundle; do
+  /usr/lib/macbook-cachyos/gtk-traffic-lights.css \
+  /usr/lib/macbook-cachyos/hid-apple.conf \
+  /usr/lib/macbook-cachyos/keyd-macos.conf \
+  /usr/lib/macbook-cachyos/sddm-theme.conf.user \
+  /usr/lib/macbook-cachyos/touchegg.conf \
+  /usr/local/bin/macbook-diagnostic-bundle \
+  /usr/local/bin/orchard-trackpad \
+  /usr/share/applications/org.orchard.Trackpad.desktop \
+  /usr/share/applications/org.orchard.Trash.desktop \
+  /usr/share/applications/org.orchard.Downloads.desktop \
+  /usr/share/icons/hicolor/scalable/apps/orchard-menu.svg \
+  /usr/share/aurorae/themes/OrchardTrafficLights/metadata.desktop \
+  /usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json \
+  /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg \
+  /usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz; do
   if ! grep -qF "\"$target_file\"" "$PACSTRAP"; then
     echo "Required target file is absent after patching: $target_file" >&2
     exit 1

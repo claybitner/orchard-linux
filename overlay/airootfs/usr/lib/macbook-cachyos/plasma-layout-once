@@ -1,14 +1,48 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-MARKER="$HOME/.config/macbook-cachyos-plasma-layout-v1"
-[[ -e "$MARKER" ]] && exit 0
+MARKER="$HOME/.config/macbook-cachyos-plasma-layout-v5"
+if [[ "${1:-}" == "--force" ]]; then
+  rm -f "$MARKER"
+fi
+if [[ -e "$MARKER" ]]; then
+  rm -f "$HOME/.config/autostart/macbook-plasma-layout.desktop"
+  exit 0
+fi
 command -v qdbus6 >/dev/null || exit 0
+
+APPLICATIONS_DIR="${MACBOOK_APPLICATIONS_DIR:-/usr/share/applications}"
+SYSTEM_WALLPAPER="${MACBOOK_SYSTEM_WALLPAPER:-/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg}"
+FALLBACK_WALLPAPER="${MACBOOK_FALLBACK_WALLPAPER:-/usr/share/wallpapers/cachyos-wallpapers/north.png}"
+WALLPAPER="$HOME/.local/share/wallpapers/orchard-dusk.svg"
+for candidate in \
+  "$SYSTEM_WALLPAPER" \
+  "$FALLBACK_WALLPAPER"; do
+  if [[ ! -f "$WALLPAPER" && -f "$candidate" ]]; then
+    WALLPAPER="$candidate"
+  fi
+done
+
+launchers=()
+for desktop_file in \
+  org.kde.dolphin.desktop \
+  firefox.desktop \
+  org.kde.konsole.desktop \
+  org.kde.kate.desktop \
+  systemsettings.desktop \
+  com.shellyorg.shelly.desktop \
+  org.orchard.Downloads.desktop \
+  org.orchard.Trash.desktop; do
+  if [[ -f "$APPLICATIONS_DIR/$desktop_file" ]]; then
+    launchers+=("applications:$desktop_file")
+  fi
+done
+LAUNCHERS="$(IFS=,; printf '%s' "${launchers[*]}")"
 
 SCRIPT="$(mktemp)"
 trap 'rm -f "$SCRIPT"' EXIT
 
-cat > "$SCRIPT" <<'JAVASCRIPT'
+cat > "$SCRIPT" <<JAVASCRIPT
 var all = panels();
 for (var i = 0; i < all.length; i++) {
     all[i].remove();
@@ -16,23 +50,62 @@ for (var i = 0; i < all.length; i++) {
 
 var top = new Panel;
 top.location = "top";
-top.height = 30;
-top.addWidget("org.kde.plasma.kickoff");
+top.height = 32;
+top.opacity = "adaptive";
+var launcher = top.addWidget("org.kde.plasma.kickoff");
+launcher.currentConfigGroup = ["General"];
+launcher.writeConfig("icon", "orchard-menu");
 top.addWidget("org.kde.plasma.appmenu");
 top.addWidget("org.kde.plasma.panelspacer");
-top.addWidget("org.kde.plasma.systemtray");
-top.addWidget("org.kde.plasma.digitalclock");
+var tray = top.addWidget("org.kde.plasma.systemtray");
+tray.currentConfigGroup = ["General"];
+tray.writeConfig("shownItems", "org.kde.plasma.bluetooth,org.kde.plasma.networkmanagement,org.kde.plasma.volume,org.kde.plasma.battery,org.kde.plasma.notifications");
+tray.writeConfig("hiddenItems", "org.kde.kdeconnect,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.keyboardindicator,org.kde.plasma.weather,org.kde.kscreen,org.kde.plasma.brightness,org.kde.plasma.keyboardlayout");
+var clock = top.addWidget("org.kde.plasma.digitalclock");
+clock.currentConfigGroup = ["Appearance"];
+clock.writeConfig("showDate", "true");
+clock.writeConfig("dateFormat", "custom");
+clock.writeConfig("customDateFormat", "ddd MMM d ");
+clock.writeConfig("showSeconds", "false");
+clock.writeConfig("use24hFormat", "0");
 
 var dock = new Panel;
 dock.location = "bottom";
-dock.height = 58;
-dock.hiding = "dodgewindows";
+dock.height = 64;
+dock.hiding = "none";
 dock.alignment = "center";
 dock.lengthMode = "fit";
 dock.floating = true;
-dock.addWidget("org.kde.plasma.icontasks");
+dock.opacity = "adaptive";
+var tasks = dock.addWidget("org.kde.plasma.icontasks");
+tasks.currentConfigGroup = ["General"];
+tasks.writeConfig("launchers", "$LAUNCHERS");
+tasks.writeConfig("showToolTips", "true");
+tasks.writeConfig("wheelEnabled", "false");
+tasks.writeConfig("fill", "false");
+tasks.writeConfig("groupingStrategy", "1");
+tasks.writeConfig("showOnlyCurrentDesktop", "false");
+tasks.writeConfig("showOnlyCurrentActivity", "false");
+
+var desktopsList = desktops();
+for (var j = 0; j < desktopsList.length; j++) {
+    var desktop = desktopsList[j];
+    desktop.wallpaperPlugin = "org.kde.image";
+    desktop.currentConfigGroup = ["Wallpaper", "org.kde.image", "General"];
+    desktop.writeConfig("Image", "$WALLPAPER");
+    desktop.writeConfig("PreviewImage", "$WALLPAPER");
+}
 JAVASCRIPT
 
 qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "$(cat "$SCRIPT")" || exit 0
 touch "$MARKER"
 rm -f "$HOME/.config/autostart/macbook-plasma-layout.desktop"
+
+# Plasma can persist newly created containments without creating their panel
+# windows until plasmashell restarts. Complete the one-time migration now so a
+# valid top panel and dock are not left invisible until the next login.
+if [[ "${MACBOOK_RESTART_PLASMASHELL:-1}" == 1 ]] &&
+  command -v systemctl >/dev/null &&
+  systemctl --user is-active --quiet plasma-plasmashell.service; then
+  systemctl --user restart plasma-plasmashell.service
+fi

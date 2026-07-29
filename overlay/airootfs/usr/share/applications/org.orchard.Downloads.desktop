@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Downloads
+Comment=Open the Downloads folder
+Exec=sh -c 'exec dolphin "$HOME/Downloads"'
+Icon=folder-downloads
+Terminal=false
+NoDisplay=true
+Categories=System;FileTools;FileManager;

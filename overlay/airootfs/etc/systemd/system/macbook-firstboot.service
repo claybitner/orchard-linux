@@ -2,7 +2,7 @@
 Description=MacBook CachyOS hardware setup
 Wants=NetworkManager.service
 After=NetworkManager.service
-ConditionPathExists=!/var/lib/macbook-cachyos/complete
+Before=display-manager.service
 
 [Service]
 Type=oneshot

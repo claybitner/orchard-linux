@@ -2,7 +2,12 @@
 set -Eeuo pipefail
 
 STATE_DIR=/var/lib/macbook-cachyos
+STATE_VERSION=5
+STATE_MARKER="$STATE_DIR/complete-v$STATE_VERSION"
+DISABLE_SUSPEND=0
 mkdir -p "$STATE_DIR"
+
+[[ -e "$STATE_MARKER" ]] && exit 0
 
 product="$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)"
 vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
@@ -18,6 +23,7 @@ vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
 if [[ "$vendor" != "Apple Inc." || "$product" != MacBook* ]]; then
   echo "Not Apple MacBook hardware; leaving generic defaults in place."
   touch "$STATE_DIR/complete"
+  touch "$STATE_MARKER"
   exit 0
 fi
 
@@ -26,11 +32,147 @@ systemctl enable --now bluetooth.service 2>/dev/null || true
 systemctl enable --now thermald.service 2>/dev/null || true
 systemctl enable --now power-profiles-daemon.service 2>/dev/null || true
 systemctl enable --now fstrim.timer 2>/dev/null || true
+systemctl enable --now touchegg.service 2>/dev/null || true
+
+if command -v flatpak >/dev/null; then
+  timeout 30s flatpak remote-add \
+    --system \
+    --if-not-exists \
+    flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo ||
+    echo "Flathub could not be configured yet; retry from Shelly when online." >&2
+fi
+
+# Apply the macOS-style Command and Option layers only after Apple hardware has
+# been verified. The packaged source remains inert on non-Apple computers.
+if command -v keyd >/dev/null &&
+  [[ -f /usr/lib/macbook-cachyos/keyd-macos.conf ]]; then
+  install -d -m 0755 /etc/keyd
+  install -m 0644 \
+    /usr/lib/macbook-cachyos/keyd-macos.conf \
+    /etc/keyd/orchard-macos.conf
+  if keyd check /etc/keyd/orchard-macos.conf; then
+    systemctl enable --now keyd.service
+  else
+    echo "The packaged keyd configuration is invalid; leaving keyd disabled." >&2
+    systemctl disable --now keyd.service 2>/dev/null || true
+  fi
+fi
+
+if [[ -f /usr/lib/macbook-cachyos/hid-apple.conf ]]; then
+  install -d -m 0755 /etc/modprobe.d
+  install -m 0644 \
+    /usr/lib/macbook-cachyos/hid-apple.conf \
+    /etc/modprobe.d/90-orchard-hid-apple.conf
+fi
+
+pci_devices="$(lspci -Dn 2>/dev/null || true)"
+
+# Reuse the original Orchard wallpaper at login instead of switching back to
+# the upstream theme background. theme.conf.user survives package upgrades.
+if [[ -f /usr/share/sddm/themes/breeze/theme.conf &&
+  -f /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg &&
+  -f /usr/lib/macbook-cachyos/sddm-theme.conf.user ]]; then
+  install -m 0644 \
+    /usr/lib/macbook-cachyos/sddm-theme.conf.user \
+    /usr/share/sddm/themes/breeze/theme.conf.user
+fi
+
+remove_limine_splash() {
+  local config=/etc/default/limine
+  local current_line
+  local current_args
+  local argument
+  local -a filtered_args=()
+  local temp
+
+  [[ -f "$config" ]] || return 0
+  if [[ "$(grep -cE '^KERNEL_CMDLINE\[default\]\+="[^"]*"$' "$config")" -ne 1 ]]; then
+    echo "Limine kernel command-line layout is unrecognized; leaving it unchanged." >&2
+    return 0
+  fi
+
+  current_line="$(grep -E '^KERNEL_CMDLINE\[default\]\+="[^"]*"$' "$config")"
+  current_args="${current_line#*=\"}"
+  current_args="${current_args%\"}"
+  read -r -a arguments <<< "$current_args"
+  for argument in "${arguments[@]}"; do
+    [[ "$argument" == "splash" ]] || filtered_args+=("$argument")
+  done
+  [[ "${#arguments[@]}" -ne "${#filtered_args[@]}" ]] || return 0
+
+  temp="$(mktemp "${config}.XXXXXX")"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == "$current_line" ]]; then
+      printf 'KERNEL_CMDLINE[default]+="%s"\n' "${filtered_args[*]}"
+    else
+      printf '%s\n' "$line"
+    fi
+  done < "$config" > "$temp"
+  chmod --reference="$config" "$temp"
+  chown --reference="$config" "$temp"
+  mv -f -- "$temp" "$config"
+
+  if command -v limine-update >/dev/null; then
+    limine-update
+  fi
+}
 
 # Broadcom vendor ID 14e4. Let the packaged driver's PCI aliases decide
 # whether wl supports the detected runtime device; do not unload alternatives.
-if lspci -Dn | grep -qi '^.* 0280: 14e4:'; then
+if grep -qi '^.* 0280: 14e4:' <<< "$pci_devices"; then
   modprobe wl 2>/dev/null || true
+fi
+
+# Plasma Wayland can fail before login on the supported Intel/NVIDIA dual-GPU
+# MacBooks. Use SDDM with Plasma X11 only when both runtime display vendors are
+# present. Integrated-only 13-inch models retain the upstream session default.
+if grep -qiE ' (0300|0302): 8086:' <<< "$pci_devices" &&
+  grep -qiE ' (0300|0302): 10de:' <<< "$pci_devices" &&
+  command -v sddm >/dev/null &&
+  [[ -f /usr/share/xsessions/plasmax11.desktop ]]; then
+  DISABLE_SUSPEND=1
+  install -d -m 0755 /etc/sddm.conf.d
+  cat > /etc/sddm.conf.d/99-macbook-x11.conf <<'EOF'
+# Remove this file to restore the upstream display-server default.
+[General]
+DisplayServer=x11
+EOF
+  systemctl disable plasmalogin.service 2>/dev/null || true
+  systemctl enable sddm.service 2>/dev/null || true
+
+  # Suspend/resume is unreliable with the legacy NVIDIA stack used by these
+  # models. Keep the machine running and shut down only at critical battery.
+  install -d -m 0755 /etc/systemd/logind.conf.d
+  install -m 0644 \
+    /usr/lib/macbook-cachyos/90-no-suspend.conf \
+    /etc/systemd/logind.conf.d/90-macbook-no-suspend.conf
+  systemctl mask \
+    sleep.target \
+    suspend.target \
+    hibernate.target \
+    hybrid-sleep.target \
+    suspend-then-hibernate.target
+  remove_limine_splash
+fi
+
+# bcm5974 is the internal Apple glass trackpad used by the milestone models.
+# libinput's fractional scroll events stay smooth when ScrollPixelDistance is
+# increased, unlike the discrete wheel steps produced by the legacy Synaptics
+# driver. The match is narrow and has no effect on generic or external
+# touchpads. Remove the installed file to return to libinput's catch-all
+# defaults.
+if grep -q 'Name="bcm5974"' /proc/bus/input/devices 2>/dev/null; then
+  install -d -m 0755 /etc/X11/xorg.conf.d
+  rm -f -- /etc/X11/xorg.conf.d/70-bcm5974-synaptics.conf
+  install -m 0644 \
+    /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
+    /etc/X11/xorg.conf.d/70-bcm5974-libinput.conf
+fi
+
+if [[ -x /usr/lib/macbook-cachyos/build-rounded-corners ]]; then
+  /usr/lib/macbook-cachyos/build-rounded-corners ||
+    echo "Rounded corners could not be built; Plasma will use square corners." >&2
 fi
 
 # Install Plasma defaults for existing human users, and retain the script for
@@ -42,10 +184,35 @@ while IFS=: read -r user _ uid _ _ home shell; do
     install -m 0755 -o "$user" -g "$group" \
       /usr/lib/macbook-cachyos/setup-plasma \
       "$home/.local/share/macbook-cachyos/setup-plasma"
+    install -m 0755 -o "$user" -g "$group" \
+      /usr/lib/macbook-cachyos/plasma-layout-once \
+      "$home/.local/share/macbook-cachyos/plasma-layout-once"
     sudo -u "$user" /usr/lib/macbook-cachyos/setup-plasma "$home" || true
+    if [[ "$DISABLE_SUSPEND" -eq 1 ]] && command -v kwriteconfig6 >/dev/null; then
+      for profile in AC Battery LowBattery; do
+        sudo -u "$user" HOME="$home" kwriteconfig6 \
+          --file powerdevilrc \
+          --group "$profile" \
+          --group SuspendAndShutdown \
+          --key AutoSuspendAction \
+          0
+        sudo -u "$user" HOME="$home" kwriteconfig6 \
+          --file powerdevilrc \
+          --group "$profile" \
+          --group SuspendAndShutdown \
+          --key LidAction \
+          0
+      done
+      sudo -u "$user" HOME="$home" kwriteconfig6 \
+        --file powerdevilrc \
+        --group BatteryManagement \
+        --key BatteryCriticalAction \
+        8
+    fi
   fi
 done < /etc/passwd
 
 macbook-hardware-report > "$STATE_DIR/report.txt" 2>&1 || true
 macbook-diagnostic-bundle "$STATE_DIR/diagnostics.tar.gz" >/dev/null 2>&1 || true
 touch "$STATE_DIR/complete"
+touch "$STATE_MARKER"

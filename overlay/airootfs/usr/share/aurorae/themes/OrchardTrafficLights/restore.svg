@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="22" viewBox="0 0 96 22">
+  <g id="active-center">
+    <rect width="24" height="22" fill="none"/>
+    <circle cx="12" cy="11" r="6.5" fill="#28c840" stroke="#1da934" stroke-width=".7"/>
+  </g>
+  <g id="inactive-center" transform="translate(24)">
+    <rect width="24" height="22" fill="none"/>
+    <circle cx="12" cy="11" r="6.5" fill="#c7c7c7" stroke="#b4b4b4" stroke-width=".7"/>
+  </g>
+  <g id="hover-center" transform="translate(48)">
+    <rect width="24" height="22" fill="none"/>
+    <circle cx="12" cy="11" r="6.5" fill="#28c840" stroke="#1da934" stroke-width=".7"/>
+    <path d="M8.7 10V8.7H10m5.3 3.3v1.3H14" fill="none" stroke="#0b6b1c" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+  </g>
+  <g id="pressed-center" transform="translate(72)">
+    <rect width="24" height="22" fill="none"/>
+    <circle cx="12" cy="11" r="6.5" fill="#20ab35" stroke="#178d2a" stroke-width=".7"/>
+    <path d="M8.7 10V8.7H10m5.3 3.3v1.3H14" fill="none" stroke="#075817" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+  </g>
+</svg>
