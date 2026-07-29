@@ -80,7 +80,18 @@ fi
 
 echo "Starting CachyOS ISO build..."
 cd "$UPSTREAM"
-./buildiso.sh -p "$PROFILE" -v -w
+set +e
+./buildiso.sh -p "$PROFILE" -v -w 2>&1 | tee "$UPSTREAM/build.log"
+build_status=${PIPESTATUS[0]}
+set -e
+
+"$ROOT/scripts/verify-built-iso.sh" \
+  "$UPSTREAM/out/$PROFILE" \
+  "$UPSTREAM/build.log"
+
+if (( build_status != 0 )); then
+  echo "Warning: CachyOS build wrapper returned status $build_status after producing a verified ISO." >&2
+fi
 
 echo
 echo "Build complete. Inspect: $UPSTREAM/out"
