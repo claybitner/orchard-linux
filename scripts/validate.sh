@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ARCHISO="$UPSTREAM/archiso"
 PROFILEDEF="$ARCHISO/profiledef.sh"
 UTIL_ISO="$UPSTREAM/util-iso.sh"
+BUILDISO="$UPSTREAM/buildiso.sh"
 
 # shellcheck source=lib/packages.sh
 source "$SCRIPT_DIR/lib/packages.sh"
@@ -220,7 +221,7 @@ if grep -RqE 'systemctl enable .* (tlp|mbpfan)\.service' \
   fail=1
 fi
 
-if [[ ! -f "$PROFILEDEF" ]] || [[ ! -f "$UTIL_ISO" ]]; then
+if [[ ! -f "$PROFILEDEF" ]] || [[ ! -f "$UTIL_ISO" ]] || [[ ! -f "$BUILDISO" ]]; then
   echo "Missing upstream ISO naming files." >&2
   fail=1
 else
@@ -242,6 +243,12 @@ else
         fail=1
       }
   fi
+fi
+
+if [[ -f "$BUILDISO" ]] && [[ "$(grep -cF \
+  '# orchard-linux: success-aware exit trap' "$BUILDISO")" -ne 1 ]]; then
+  echo "CachyOS build entry point lacks the success-aware EXIT trap." >&2
+  fail=1
 fi
 
 if [[ $fail -ne 0 ]]; then

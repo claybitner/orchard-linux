@@ -28,12 +28,32 @@ run_build() {
     mv "$outFolder/$_profile/cachyos-$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)-x86_64.iso" "$outFolder/$_profile/${iso_file}"
 }
 EOF
+cat > "$TEST_ROOT/buildiso.sh" <<'EOF'
+#!/usr/bin/env bash
+set -e
+
+trap_exit() {
+  echo "unexpected EXIT trap" >&2
+  return 1
+}
+
+gettext() {
+  printf '%s\n' "$1"
+}
+
+trap 'trap_exit EXIT "$(gettext "An unknown error has occurred. Exiting...")"' EXIT
+
+true
+EOF
+chmod 0755 "$TEST_ROOT/buildiso.sh"
 
 "$ROOT/scripts/apply-overlay.sh" "$TEST_ROOT" macbook-cachyos desktop
 cp "$TEST_ROOT/util-iso.sh" "$TEST_ROOT/util-iso-first-pass"
+cp "$TEST_ROOT/buildiso.sh" "$TEST_ROOT/buildiso-first-pass"
 "$ROOT/scripts/apply-overlay.sh" "$TEST_ROOT" macbook-cachyos desktop
 
 cmp "$TEST_ROOT/util-iso-first-pass" "$TEST_ROOT/util-iso.sh"
+cmp "$TEST_ROOT/buildiso-first-pass" "$TEST_ROOT/buildiso.sh"
 grep -qxF 'iso_name="macbook-cachyos"' "$TEST_ROOT/archiso/profiledef.sh"
 grep -qxF \
   '    vars+=("macbook-cachyos") # orchard-linux: ISO filename prefix' \
@@ -57,6 +77,9 @@ for executable_path in \
 done
 [[ "$(grep -cF '# orchard-linux: executable overlay' \
   "$TEST_ROOT/archiso/profiledef.sh")" -eq 9 ]]
+[[ "$(grep -cF '# orchard-linux: success-aware exit trap' \
+  "$TEST_ROOT/buildiso.sh")" -eq 1 ]]
+"$TEST_ROOT/buildiso.sh"
 for data_path in \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \
   /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \

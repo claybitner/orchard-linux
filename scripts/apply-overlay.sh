@@ -144,6 +144,11 @@ UTIL_ISO="$UPSTREAM/util-iso.sh"
   echo "Missing expected upstream build helper: $UTIL_ISO" >&2
   exit 1
 }
+BUILDISO="$UPSTREAM/buildiso.sh"
+[[ -f "$BUILDISO" ]] || {
+  echo "Missing expected upstream build entry point: $BUILDISO" >&2
+  exit 1
+}
 
 PREFIX_MARKER='# orchard-linux: ISO filename prefix'
 MOVE_MARKER='# orchard-linux: raw ISO filename'
@@ -191,6 +196,44 @@ awk \
   { print }
 ' "$UTIL_ISO" > "$UTIL_ISO_TMP"
 mv -f -- "$UTIL_ISO_TMP" "$UTIL_ISO"
+trap - EXIT
+
+# CachyOS currently installs an unconditional EXIT trap that reports a normal,
+# successful return from run_build as an unknown error. Depending on the Bash
+# version, that false error can also become exit status 1 after the finished ISO
+# has been removed from the work directory. Keep ERR and signal handling intact,
+# but make the EXIT handler run only for a genuinely nonzero status.
+EXIT_TRAP_MARKER='# orchard-linux: success-aware exit trap'
+DEFAULT_EXIT_TRAP="$(cat <<'EOF'
+trap 'trap_exit EXIT "$(gettext "An unknown error has occurred. Exiting...")"' EXIT
+EOF
+)"
+PATCHED_EXIT_TRAP="$(cat <<'EOF'
+trap 'status=$?; (( status == 0 )) || trap_exit EXIT "$(gettext "An unknown error has occurred. Exiting...")"' EXIT # orchard-linux: success-aware exit trap
+EOF
+)"
+
+if grep -qF "$EXIT_TRAP_MARKER" "$BUILDISO"; then
+  if [[ "$(grep -cF "$EXIT_TRAP_MARKER" "$BUILDISO")" -ne 1 ]]; then
+    echo "Expected exactly one marked EXIT trap in $BUILDISO." >&2
+    exit 1
+  fi
+elif [[ "$(grep -cFx "$DEFAULT_EXIT_TRAP" "$BUILDISO")" -ne 1 ]]; then
+  echo "Upstream EXIT trap changed in $BUILDISO; refusing to patch it." >&2
+  exit 1
+fi
+
+BUILDISO_TMP="$(mktemp "${BUILDISO}.XXXXXX")"
+trap 'rm -f -- "$BUILDISO_TMP"' EXIT
+while IFS= read -r line || [[ -n "$line" ]]; do
+  if [[ "$line" == "$DEFAULT_EXIT_TRAP" || "$line" == *"$EXIT_TRAP_MARKER" ]]; then
+    printf '%s\n' "$PATCHED_EXIT_TRAP"
+  else
+    printf '%s\n' "$line"
+  fi
+done < "$BUILDISO" > "$BUILDISO_TMP"
+chmod 0755 "$BUILDISO_TMP"
+mv -f -- "$BUILDISO_TMP" "$BUILDISO"
 trap - EXIT
 
 # Ensure only actual programs are executable. The same directory also contains
