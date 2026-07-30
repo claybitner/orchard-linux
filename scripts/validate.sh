@@ -94,6 +94,12 @@ for executable_path in "${executable_overlay_paths[@]}"; do
 done
 
 CALAMARES_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/99-macbook-calamares.hook"
+for calamares_package in cachyos-calamares cachyos-calamares-next; do
+  if [[ "$(grep -cxF "Target = $calamares_package" "$CALAMARES_HOOK")" -ne 1 ]]; then
+    echo "Calamares hook must patch $calamares_package exactly once." >&2
+    fail=1
+  fi
+done
 if ! grep -qxF \
   'Exec = /usr/bin/bash /usr/lib/macbook-cachyos/patch-calamares' \
   "$CALAMARES_HOOK"; then

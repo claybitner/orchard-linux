@@ -92,6 +92,11 @@ grep -qxF '# remove from airootfs!' \
   "$TEST_ROOT/archiso/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
 grep -qxF 'Exec = /usr/bin/bash /usr/lib/macbook-cachyos/prebuild-live-environment' \
   "$TEST_ROOT/archiso/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
+for calamares_package in cachyos-calamares cachyos-calamares-next; do
+  grep -qxF \
+    "Target = $calamares_package" \
+    "$TEST_ROOT/archiso/airootfs/etc/pacman.d/hooks/99-macbook-calamares.hook"
+done
 [[ -L \
   "$TEST_ROOT/archiso/airootfs/etc/systemd/system/graphical.target.wants/macbook-background-setup.service" ]]
 [[ -L \
