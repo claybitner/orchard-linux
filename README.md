@@ -236,6 +236,24 @@ To restore upstream behavior on a dual-GPU model, remove
 `sleep.target`, `suspend.target`, `hibernate.target`, `hybrid-sleep.target` and
 `suspend-then-hibernate.target` units.
 
+## Repair an existing CachyOS installation
+
+An Intel MacBook that received a stock CachyOS installation can be brought up
+to the current Orchard configuration from a local checkout:
+
+```bash
+git pull --ff-only
+sudo ./scripts/repair-installed-system.sh
+sudo reboot
+```
+
+The repair verifies Apple MacBook DMI data, updates CachyOS, installs headers
+for every detected kernel, installs the Orchard system files, rebuilds rounded
+corners for the installed KWin ABI, enables the persistent Wi-Fi and first-boot
+services, and applies the Orchard profile to existing users. It intentionally
+does not copy the live-environment welcome or installer launchers. Re-running
+the repair is safe.
+
 ## Project layout
 
 ```text
@@ -246,6 +264,7 @@ overlay/
 scripts/
   apply-overlay.sh
   patch-package-list.sh
+  repair-installed-system.sh
   validate.sh
 build.sh
 test-vm.sh

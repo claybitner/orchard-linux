@@ -79,6 +79,7 @@ jobs:
           ./tests/test-built-iso-verification.sh
           ./tests/test-package-list.sh
           ./tests/test-calamares-patch.sh
+          ./tests/test-installed-system-repair.sh
           ./tests/test-plasma-setup.sh
           ./tests/test-prebuilt-live-environment.sh
           ./tests/test-trackpad-settings.sh
