@@ -72,6 +72,7 @@ EXECUTABLE_OVERLAY_PATHS=(
   /usr/lib/macbook-cachyos/patch-calamares
   /usr/lib/macbook-cachyos/plasma-layout-once
   /usr/lib/macbook-cachyos/setup-plasma
+  /usr/lib/macbook-cachyos/wifi-driver-setup
 )
 
 if [[ "$(grep -c '^file_permissions=($' "$PROFILEDEF")" -ne 1 ]]; then
@@ -95,6 +96,7 @@ awk '
     paths[9] = "/usr/lib/macbook-cachyos/patch-calamares"
     paths[10] = "/usr/lib/macbook-cachyos/plasma-layout-once"
     paths[11] = "/usr/lib/macbook-cachyos/setup-plasma"
+    paths[12] = "/usr/lib/macbook-cachyos/wifi-driver-setup"
   }
   /^file_permissions=\($/ {
     in_permissions = 1
@@ -102,7 +104,7 @@ awk '
     next
   }
   in_permissions && /^\)$/ {
-    for (i = 1; i <= 11; i++) {
+    for (i = 1; i <= 12; i++) {
       print "  [\"" paths[i] "\"]=\"0:0:755\"" marker
     }
     in_permissions = 0
@@ -111,7 +113,7 @@ awk '
     next
   }
   in_permissions {
-    for (i = 1; i <= 11; i++) {
+    for (i = 1; i <= 12; i++) {
       prefix = "[\"" paths[i] "\"]="
       line = $0
       sub(/^[[:space:]]*/, "", line)
@@ -255,6 +257,7 @@ for executable_path in "${EXECUTABLE_OVERLAY_PATHS[@]}"; do
 done
 chmod 0644 \
   "$ARCHISO/airootfs/etc/systemd/system/macbook-background-setup.service" \
-  "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
+  "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service" \
+  "$ARCHISO/airootfs/etc/systemd/system/macbook-wifi-driver.service"
 
 echo "Overlay applied."

@@ -1,0 +1,14 @@
+[Unit]
+Description=Select the MacBook Broadcom Wi-Fi driver
+Wants=systemd-udev-settle.service
+After=systemd-udev-settle.service
+Before=iwd.service NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/macbook-cachyos/wifi-driver-setup
+RemainAfterExit=yes
+TimeoutStartSec=30s
+
+[Install]
+WantedBy=multi-user.target

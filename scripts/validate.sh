@@ -92,11 +92,13 @@ fi
 
 CALAMARES_PATCH="$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
 FIRSTBOOT="$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
+WIFI_DRIVER_SETUP="$ARCHISO/airootfs/usr/lib/macbook-cachyos/wifi-driver-setup"
 BACKGROUND_SETUP="$ARCHISO/airootfs/usr/lib/macbook-cachyos/background-setup"
 PREBUILD_LIVE="$ARCHISO/airootfs/usr/lib/macbook-cachyos/prebuild-live-environment"
 ROUNDED_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
 PREBUILD_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
 BACKGROUND_SERVICE_LINK="$ARCHISO/airootfs/etc/systemd/system/graphical.target.wants/macbook-background-setup.service"
+WIFI_SERVICE_LINK="$ARCHISO/airootfs/etc/systemd/system/multi-user.target.wants/macbook-wifi-driver.service"
 for pkg in \
   appmenu-gtk-module \
   base-devel \
@@ -138,6 +140,17 @@ for expected_firstboot_setting in \
   }
 done
 
+for expected_wifi_setting in \
+  '14e4:43ba' \
+  'brcmfmac_wcc' \
+  'brcmfmac feature_disable=0x82000' \
+  'Not Apple MacBook hardware'; do
+  grep -qF "$expected_wifi_setting" "$WIFI_DRIVER_SETUP" || {
+    echo "MacBook Wi-Fi driver selection is incomplete: $expected_wifi_setting" >&2
+    fail=1
+  }
+done
+
 for forbidden_firstboot_work in \
   'flatpak remote-add' \
   '/usr/lib/macbook-cachyos/build-rounded-corners' \
@@ -162,6 +175,12 @@ done
 if [[ ! -L "$BACKGROUND_SERVICE_LINK" ]] ||
   [[ "$(readlink "$BACKGROUND_SERVICE_LINK")" != '../macbook-background-setup.service' ]]; then
   echo "Background setup must be enabled by an explicit graphical.target symlink." >&2
+  fail=1
+fi
+
+if [[ ! -L "$WIFI_SERVICE_LINK" ]] ||
+  [[ "$(readlink "$WIFI_SERVICE_LINK")" != '../macbook-wifi-driver.service' ]]; then
+  echo "Wi-Fi driver selection must be enabled by an explicit multi-user.target symlink." >&2
   fail=1
 fi
 
@@ -208,6 +227,7 @@ for copied_file in \
   /etc/skel/.local/share/macbook-cachyos/setup-plasma \
   /etc/systemd/system/macbook-background-setup.service \
   /etc/systemd/system/macbook-firstboot.service \
+  /etc/systemd/system/macbook-wifi-driver.service \
   /etc/environment.d/90-orchard-input.conf \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \
   /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
@@ -216,6 +236,7 @@ for copied_file in \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/lib/macbook-cachyos/hid-apple.conf \
   /usr/lib/macbook-cachyos/keyd-macos.conf \
+  /usr/lib/macbook-cachyos/wifi-driver-setup \
   /usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so \
   /usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so \
   /usr/local/bin/orchard-theme \
@@ -245,6 +266,21 @@ if ! grep -qE '^[[:space:]]+- name: "macbook-background-setup\.service"$' \
   echo "Calamares patch does not enable macbook-background-setup.service." >&2
   fail=1
 fi
+if ! grep -qE '^[[:space:]]+- name: "macbook-wifi-driver\.service"$' \
+  "$CALAMARES_PATCH"; then
+  echo "Calamares patch does not enable macbook-wifi-driver.service." >&2
+  fail=1
+fi
+
+WIFI_SERVICE="$ARCHISO/airootfs/etc/systemd/system/macbook-wifi-driver.service"
+for expected_wifi_unit_line in \
+  'Before=iwd.service NetworkManager.service' \
+  'ExecStart=/usr/lib/macbook-cachyos/wifi-driver-setup'; do
+  grep -qxF "$expected_wifi_unit_line" "$WIFI_SERVICE" || {
+    echo "MacBook Wi-Fi service is missing: $expected_wifi_unit_line" >&2
+    fail=1
+  }
+done
 
 if ! grep -qxF 'TimeoutStartSec=60s' \
   "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"; then

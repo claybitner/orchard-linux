@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+DMI_ROOT="${ORCHARD_DMI_ROOT:-/sys/class/dmi/id}"
+LSPCI_BIN="${ORCHARD_LSPCI_BIN:-/usr/bin/lspci}"
+MODPROBE_BIN="${ORCHARD_MODPROBE_BIN:-/usr/bin/modprobe}"
+
+vendor="$(cat "$DMI_ROOT/sys_vendor" 2>/dev/null || true)"
+product="$(cat "$DMI_ROOT/product_name" 2>/dev/null || true)"
+
+# Require both Apple firmware identification and a MacBook product identifier.
+# This service is enabled on the live ISO but must remain inert elsewhere.
+if [[ "$vendor" != "Apple Inc." || "$product" != MacBook* ]]; then
+  echo "Not Apple MacBook hardware; leaving automatic Wi-Fi selection unchanged."
+  exit 0
+fi
+
+pci_devices="$("$LSPCI_BIN" -Dn 2>/dev/null || true)"
+
+# BCM43602 [14e4:43ba], used by MacBookPro12,1, probes unsuccessfully with wl.
+# Its in-kernel brcmfmac driver needs the WCC holder removed before a reload.
+# feature_disable is accepted at module load time but is intentionally not
+# exposed as a readable sysfs parameter by this kernel.
+if grep -qiE \
+  '^[[:xdigit:]:.]+[[:space:]]+0280:[[:space:]]+14e4:43ba([[:space:]]|$)' \
+  <<< "$pci_devices"; then
+  "$MODPROBE_BIN" -r brcmfmac_wcc 2>/dev/null || true
+  "$MODPROBE_BIN" -r brcmfmac 2>/dev/null || true
+  "$MODPROBE_BIN" -r wl 2>/dev/null || true
+  "$MODPROBE_BIN" brcmfmac feature_disable=0x82000
+  echo "Selected brcmfmac for Broadcom BCM43602 [14e4:43ba]."
+  exit 0
+fi
+
+# Other Broadcom adapters retain the packaged wl driver's normal PCI matching.
+if grep -qiE \
+  '^[[:xdigit:]:.]+[[:space:]]+0280:[[:space:]]+14e4:' \
+  <<< "$pci_devices"; then
+  "$MODPROBE_BIN" wl 2>/dev/null || true
+fi

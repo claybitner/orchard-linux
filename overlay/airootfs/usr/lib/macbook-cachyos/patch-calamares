@@ -140,6 +140,7 @@ FILES_BLOCK="$(cat <<'EOF'
   - "/etc/skel/.local/share/macbook-cachyos/setup-plasma"
   - "/etc/systemd/system/macbook-background-setup.service"
   - "/etc/systemd/system/macbook-firstboot.service"
+  - "/etc/systemd/system/macbook-wifi-driver.service"
   - "/etc/xdg/autostart/org.orchard.TrackpadApply.desktop"
   - "/var/lib/macbook-cachyos/rounded-corners-build"
   - "/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so"
@@ -156,6 +157,7 @@ FILES_BLOCK="$(cat <<'EOF'
   - "/usr/lib/macbook-cachyos/sddm-theme.conf.user"
   - "/usr/lib/macbook-cachyos/setup-plasma"
   - "/usr/lib/macbook-cachyos/touchegg.conf"
+  - "/usr/lib/macbook-cachyos/wifi-driver-setup"
   - "/usr/local/bin/macbook-diagnostic-bundle"
   - "/usr/local/bin/macbook-hardware-report"
   - "/usr/local/bin/macbook-optional-theme"
@@ -191,6 +193,9 @@ SERVICES_BLOCK="$(cat <<'EOF'
 
    # macbook-cachyos service
    - name: "macbook-firstboot.service"
+     action: "enable"
+     mandatory: true
+   - name: "macbook-wifi-driver.service"
      action: "enable"
      mandatory: true
    - name: "macbook-background-setup.service"
@@ -249,6 +254,7 @@ for target_file in \
   /etc/pacman.d/hooks/95-orchard-rounded-corners.hook \
   /etc/systemd/system/macbook-background-setup.service \
   /etc/systemd/system/macbook-firstboot.service \
+  /etc/systemd/system/macbook-wifi-driver.service \
   /etc/xdg/autostart/org.orchard.TrackpadApply.desktop \
   /etc/environment.d/90-orchard-input.conf \
   /var/lib/macbook-cachyos/rounded-corners-build \
@@ -264,6 +270,7 @@ for target_file in \
   /usr/lib/macbook-cachyos/keyd-macos.conf \
   /usr/lib/macbook-cachyos/sddm-theme.conf.user \
   /usr/lib/macbook-cachyos/touchegg.conf \
+  /usr/lib/macbook-cachyos/wifi-driver-setup \
   /usr/local/bin/macbook-diagnostic-bundle \
   /usr/local/bin/orchard-theme \
   /usr/local/bin/orchard-trackpad \
@@ -289,6 +296,10 @@ if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' "$SERVICES"; 
 fi
 if ! grep -qE '^[[:space:]]+- name: "macbook-background-setup\.service"$' "$SERVICES"; then
   echo "MacBook background setup service is absent after patching." >&2
+  exit 1
+fi
+if ! grep -qE '^[[:space:]]+- name: "macbook-wifi-driver\.service"$' "$SERVICES"; then
+  echo "MacBook Wi-Fi driver service is absent after patching." >&2
   exit 1
 fi
 

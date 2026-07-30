@@ -73,13 +73,14 @@ for executable_path in \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/lib/macbook-cachyos/patch-calamares \
   /usr/lib/macbook-cachyos/plasma-layout-once \
-  /usr/lib/macbook-cachyos/setup-plasma; do
+  /usr/lib/macbook-cachyos/setup-plasma \
+  /usr/lib/macbook-cachyos/wifi-driver-setup; do
   grep -qxF \
     "  [\"$executable_path\"]=\"0:0:755\" # orchard-linux: executable overlay" \
     "$TEST_ROOT/archiso/profiledef.sh"
 done
 [[ "$(grep -cF '# orchard-linux: executable overlay' \
-  "$TEST_ROOT/archiso/profiledef.sh")" -eq 11 ]]
+  "$TEST_ROOT/archiso/profiledef.sh")" -eq 12 ]]
 [[ "$(grep -cF '# orchard-linux: removed unconditional EXIT error trap' \
   "$TEST_ROOT/buildiso.sh")" -eq 1 ]]
 grep -qxF \
@@ -92,6 +93,8 @@ grep -qxF 'Exec = /usr/bin/bash /usr/lib/macbook-cachyos/prebuild-live-environme
   "$TEST_ROOT/archiso/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
 [[ -L \
   "$TEST_ROOT/archiso/airootfs/etc/systemd/system/graphical.target.wants/macbook-background-setup.service" ]]
+[[ -L \
+  "$TEST_ROOT/archiso/airootfs/etc/systemd/system/multi-user.target.wants/macbook-wifi-driver.service" ]]
 for data_path in \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \
   /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \

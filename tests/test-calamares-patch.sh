@@ -160,6 +160,7 @@ grep -qxF \
   '  - "/usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz"' \
   "$MODULES/pacstrap.conf"
 grep -qxF '   - name: "macbook-firstboot.service"' "$MODULES/services-systemd.conf"
+grep -qxF '   - name: "macbook-wifi-driver.service"' "$MODULES/services-systemd.conf"
 grep -qxF \
   '   - name: "macbook-background-setup.service"' \
   "$MODULES/services-systemd.conf"

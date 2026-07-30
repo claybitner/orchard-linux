@@ -113,12 +113,6 @@ remove_limine_splash() {
   fi
 }
 
-# Broadcom vendor ID 14e4. Let the packaged driver's PCI aliases decide
-# whether wl supports the detected runtime device; do not unload alternatives.
-if grep -qi '^.* 0280: 14e4:' <<< "$pci_devices"; then
-  modprobe wl 2>/dev/null || true
-fi
-
 # Plasma Wayland can fail before login on the supported Intel/NVIDIA dual-GPU
 # MacBooks. Use SDDM with Plasma X11 only when both runtime display vendors are
 # present. Integrated-only 13-inch models retain the upstream session default.
