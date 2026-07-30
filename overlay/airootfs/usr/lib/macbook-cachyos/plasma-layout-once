@@ -31,6 +31,7 @@ for desktop_file in \
   org.kde.kate.desktop \
   systemsettings.desktop \
   com.shellyorg.shelly.desktop \
+  org.orchard.Install.desktop \
   org.orchard.Downloads.desktop \
   org.orchard.Trash.desktop; do
   if [[ -f "$APPLICATIONS_DIR/$desktop_file" ]]; then

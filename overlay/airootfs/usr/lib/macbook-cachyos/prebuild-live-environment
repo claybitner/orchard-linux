@@ -24,6 +24,7 @@ generate_color_scheme() {
   local source="${1:?missing source scheme}"
   local target="${2:?missing target scheme}"
   local name="${3:?missing scheme name}"
+  local identifier="${4:?missing scheme identifier}"
   local temporary
 
   [[ -f "$source" ]] || {
@@ -31,11 +32,9 @@ generate_color_scheme() {
     exit 1
   }
   temporary="$(mktemp "${target}.XXXXXX")"
-  awk -v name="$name" '
+  awk -v name="$name" -v identifier="$identifier" '
     /^Name=/ { print "Name=" name; next }
-    /^ColorScheme=/ { print "ColorScheme=" name; next }
-    /^DecorationFocus=/ { print "DecorationFocus=52,120,246"; next }
-    /^SelectionBackground=/ { print "SelectionBackground=52,120,246"; next }
+    /^ColorScheme=/ { print "ColorScheme=" identifier; next }
     { print }
   ' "$source" > "$temporary"
   chmod 0644 "$temporary"
@@ -46,11 +45,13 @@ install -d -m 0755 "$COLOR_SCHEME_DIR"
 generate_color_scheme \
   "$COLOR_SCHEME_DIR/BreezeLight.colors" \
   "$COLOR_SCHEME_DIR/OrchardLight.colors" \
-  "Orchard Light"
+  "Orchard Light" \
+  "OrchardLight"
 generate_color_scheme \
   "$COLOR_SCHEME_DIR/BreezeDark.colors" \
   "$COLOR_SCHEME_DIR/OrchardDark.colors" \
-  "Orchard Dark"
+  "Orchard Dark" \
+  "OrchardDark"
 
 MACBOOK_ROUNDED_CORNERS_FORCE=1 \
   "$LIB_DIR/build-rounded-corners"

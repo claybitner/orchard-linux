@@ -34,6 +34,7 @@ for expected in \
   ffmpegthumbs \
   kdegraphics-thumbnailers \
   keyd \
+  kdialog \
   kimageformats \
   kio-extras \
   linux-cachyos-headers \

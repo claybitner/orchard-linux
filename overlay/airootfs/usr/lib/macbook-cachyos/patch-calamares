@@ -93,6 +93,7 @@ PACKAGE_BLOCK="$(cat <<'EOF'
   - inter-font
   - kdegraphics-thumbnailers
   - keyd
+  - kdialog
   - kimageformats
   - kio-extras
   - papirus-icon-theme
@@ -177,7 +178,11 @@ FILES_BLOCK="$(cat <<'EOF'
   - "/usr/share/aurorae/themes/OrchardTrafficLights/minimize.svg"
   - "/usr/share/aurorae/themes/OrchardTrafficLights/restore.svg"
   - "/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/splash/Splash.qml"
+  - "/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/defaults"
   - "/usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json"
+  - "/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/defaults"
+  - "/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/splash/Splash.qml"
+  - "/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/metadata.json"
   - "/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg"
   - "/usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz"
 EOF
@@ -226,6 +231,7 @@ for package in \
   inter-font \
   kdegraphics-thumbnailers \
   keyd \
+  kdialog \
   kimageformats \
   kio-extras \
   papirus-icon-theme \
@@ -282,6 +288,10 @@ for target_file in \
   /usr/share/icons/hicolor/scalable/apps/orchard-menu.svg \
   /usr/share/aurorae/themes/OrchardTrafficLights/metadata.desktop \
   /usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json \
+  /usr/share/plasma/look-and-feel/org.orchard.desktop/contents/defaults \
+  /usr/share/plasma/look-and-feel/org.orchard.dark.desktop/metadata.json \
+  /usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/defaults \
+  /usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/splash/Splash.qml \
   /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg \
   /usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz; do
   if ! grep -qF "\"$target_file\"" "$PACSTRAP"; then

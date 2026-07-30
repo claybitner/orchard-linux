@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ARCHISO_ROOT="${ORCHARD_ARCHISO_ROOT:-/run/archiso}"
+APPLICATION="${ORCHARD_INSTALL_APPLICATION:-/usr/share/applications/org.orchard.Install.desktop}"
+INSTALLER="${ORCHARD_INSTALLER:-/usr/local/bin/calamares-online.sh}"
+MARKER="${ORCHARD_WELCOME_MARKER:-$HOME/.cache/orchard-live-welcome-shown}"
+PROMPT_DELAY="${ORCHARD_PROMPT_DELAY:-2}"
+
+[[ -d "$ARCHISO_ROOT" ]] || exit 0
+[[ -f "$APPLICATION" && -x "$INSTALLER" ]] || exit 0
+
+desktop_dir="${ORCHARD_DESKTOP_DIR:-}"
+if [[ -z "$desktop_dir" ]] && command -v xdg-user-dir >/dev/null; then
+  desktop_dir="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
+fi
+desktop_dir="${desktop_dir:-$HOME/Desktop}"
+install -d -m 0755 "$desktop_dir"
+install -m 0755 "$APPLICATION" "$desktop_dir/Install Orchard Linux.desktop"
+if command -v gio >/dev/null; then
+  gio set \
+    "$desktop_dir/Install Orchard Linux.desktop" \
+    metadata::trusted \
+    true \
+    2>/dev/null || true
+fi
+
+[[ ! -e "$MARKER" ]] || exit 0
+install -d -m 0755 "$(dirname -- "$MARKER")"
+touch "$MARKER"
+
+sleep "$PROMPT_DELAY"
+if command -v kdialog >/dev/null &&
+  kdialog \
+    --title "Welcome to Orchard Linux" \
+    --icon calamares \
+    --yes-label "Install now" \
+    --no-label "Try Orchard first" \
+    --yesno \
+    "You are using the live preview. Would you like to install Orchard Linux on this Mac now?\n\nYou can keep exploring and start the installer anytime from the desktop or Dock."; then
+  exec "$INSTALLER"
+fi

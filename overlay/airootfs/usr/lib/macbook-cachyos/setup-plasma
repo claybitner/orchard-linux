@@ -15,16 +15,20 @@ PROFILE_WALLPAPER="$USER_WALLPAPER"
 DECORATION_DIR="${MACBOOK_DECORATION_DIR:-/usr/share/aurorae/themes/OrchardTrafficLights}"
 TOUCHEGG_CONFIG="${MACBOOK_TOUCHEGG_CONFIG:-/usr/lib/macbook-cachyos/touchegg.conf}"
 GTK_TRAFFIC_LIGHTS="${MACBOOK_GTK_TRAFFIC_LIGHTS:-/usr/lib/macbook-cachyos/gtk-traffic-lights.css}"
-LOOK_AND_FEEL_DIR="${MACBOOK_LOOK_AND_FEEL_DIR:-/usr/share/plasma/look-and-feel/org.orchard.desktop}"
+LOOK_AND_FEEL_ID="${MACBOOK_LOOK_AND_FEEL_ID:-org.orchard.dark.desktop}"
+LOOK_AND_FEEL_DIR="${MACBOOK_LOOK_AND_FEEL_DIR:-/usr/share/plasma/look-and-feel/$LOOK_AND_FEEL_ID}"
 
 # Use only redistributable themes and fonts from the Arch/CachyOS repositories.
 if command -v plasma-apply-colorscheme >/dev/null &&
   [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
-  plasma-apply-colorscheme OrchardLight >/dev/null 2>&1 || true
+  plasma-apply-colorscheme OrchardDark >/dev/null 2>&1 || true
 fi
-kwriteconfig6 --file kdeglobals --group General --key ColorScheme OrchardLight
+kwriteconfig6 --file kdeglobals --group General --key ColorScheme OrchardDark
 kwriteconfig6 --file kdeglobals --group General --key AccentColor "52,120,246"
-if [[ -d /usr/share/icons/Papirus ]]; then
+kwriteconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage "$LOOK_AND_FEEL_ID"
+if [[ -d /usr/share/icons/Papirus-Dark ]]; then
+  kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark
+elif [[ -d /usr/share/icons/Papirus ]]; then
   kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus
 else
   kwriteconfig6 --file kdeglobals --group Icons --key Theme breeze
@@ -33,7 +37,7 @@ kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle Breeze
 kwriteconfig6 --file kdeglobals --group KDE --key SingleClick false
 kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 0.85
 kwriteconfig6 --file kdeglobals --group KDE --key ShowDeleteCommand false
-kwriteconfig6 --file plasmarc --group Theme --key name breeze-light
+kwriteconfig6 --file plasmarc --group Theme --key name default
 
 # Inter is a redistributable UI typeface with the compact, neutral proportions
 # users expect from macOS. Retain Noto Sans when the package is unavailable.
@@ -277,7 +281,7 @@ EOF
 # theme choices.
 if [[ -d "$LOOK_AND_FEEL_DIR" ]]; then
   kwriteconfig6 --file ksplashrc --group KSplash --key Engine KSplashQML
-  kwriteconfig6 --file ksplashrc --group KSplash --key Theme org.orchard.desktop
+  kwriteconfig6 --file ksplashrc --group KSplash --key Theme "$LOOK_AND_FEEL_ID"
 fi
 
 # Keep GTK applications visually aligned with Plasma.
@@ -292,12 +296,12 @@ for gtk_version in 3.0 4.0; do
     --file "gtk-$gtk_version/settings.ini" \
     --group Settings \
     --key gtk-theme-name \
-    Breeze
+    Breeze-Dark
   kwriteconfig6 \
     --file "gtk-$gtk_version/settings.ini" \
     --group Settings \
     --key gtk-icon-theme-name \
-    Papirus
+    Papirus-Dark
   kwriteconfig6 \
     --file "gtk-$gtk_version/settings.ini" \
     --group Settings \

@@ -6,10 +6,10 @@
                 "Name": "Orchard Linux contributors"
             }
         ],
-        "Description": "Breeze Light with the Orchard macOS-style desktop experience",
-        "Id": "org.orchard.desktop",
+        "Description": "Breeze Dark with the Orchard macOS-style desktop experience",
+        "Id": "org.orchard.dark.desktop",
         "License": "CC0-1.0",
-        "Name": "Orchard Light"
+        "Name": "Orchard Dark"
     },
     "X-Plasma-APIVersion": "2"
 }

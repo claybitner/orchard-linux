@@ -81,7 +81,9 @@ grep -qxF 'Name=Orchard Light' \
   "$TEST_ROOT/usr/share/color-schemes/OrchardLight.colors"
 grep -qxF 'Name=Orchard Dark' \
   "$TEST_ROOT/usr/share/color-schemes/OrchardDark.colors"
-grep -qxF 'SelectionBackground=52,120,246' \
+grep -qxF 'ColorScheme=OrchardDark' \
+  "$TEST_ROOT/usr/share/color-schemes/OrchardDark.colors"
+grep -qxF 'SelectionBackground=61,174,233' \
   "$TEST_ROOT/usr/share/color-schemes/OrchardDark.colors"
 
 cat > "$BIN_DIR/kwriteconfig6" <<EOF
@@ -102,6 +104,9 @@ PATH="$BIN_DIR:$PATH" DISPLAY=:1 \
   "$ROOT/overlay/airootfs/usr/local/bin/orchard-theme" dark
 grep -qF \
   'kwriteconfig6 --file kdeglobals --group General --key ColorScheme OrchardDark' \
+  "$LOG"
+grep -qF \
+  'kwriteconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage org.orchard.dark.desktop' \
   "$LOG"
 grep -qxF 'plasma-apply-colorscheme OrchardDark' "$LOG"
 

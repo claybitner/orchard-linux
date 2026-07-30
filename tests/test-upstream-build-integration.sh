@@ -71,6 +71,7 @@ for executable_path in \
   /usr/lib/macbook-cachyos/background-setup \
   /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
+  /usr/lib/macbook-cachyos/live-welcome \
   /usr/lib/macbook-cachyos/patch-calamares \
   /usr/lib/macbook-cachyos/plasma-layout-once \
   /usr/lib/macbook-cachyos/setup-plasma \
@@ -80,7 +81,7 @@ for executable_path in \
     "$TEST_ROOT/archiso/profiledef.sh"
 done
 [[ "$(grep -cF '# orchard-linux: executable overlay' \
-  "$TEST_ROOT/archiso/profiledef.sh")" -eq 12 ]]
+  "$TEST_ROOT/archiso/profiledef.sh")" -eq 13 ]]
 [[ "$(grep -cF '# orchard-linux: removed unconditional EXIT error trap' \
   "$TEST_ROOT/buildiso.sh")" -eq 1 ]]
 grep -qxF \

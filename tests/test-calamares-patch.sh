@@ -54,6 +54,7 @@ grep -qxF '  - aurorae' "$MODULES/pacstrap.conf"
 grep -qxF '  - appmenu-gtk-module' "$MODULES/pacstrap.conf"
 grep -qxF '  - base-devel' "$MODULES/pacstrap.conf"
 grep -qxF '  - broadcom-wl-dkms' "$MODULES/pacstrap.conf"
+grep -qxF '  - kdialog' "$MODULES/pacstrap.conf"
 grep -qxF '  - capitaine-cursors' "$MODULES/pacstrap.conf"
 grep -qxF '  - cmake' "$MODULES/pacstrap.conf"
 grep -qxF '  - extra-cmake-modules' "$MODULES/pacstrap.conf"
@@ -152,6 +153,9 @@ grep -qxF \
   "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/metadata.json"' \
   "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg"' \

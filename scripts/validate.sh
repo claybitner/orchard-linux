@@ -30,6 +30,8 @@ required_files=(
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/background-setup"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/build-rounded-corners"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/live-welcome"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/wifi-driver-setup"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/hid-apple.conf"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/keyd-macos.conf"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
@@ -37,10 +39,17 @@ required_files=(
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/setup-plasma"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/plasma-layout-once"
   "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json"
+  "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/defaults"
   "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/splash/Splash.qml"
+  "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/metadata.json"
+  "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/defaults"
+  "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/splash/Splash.qml"
+  "$ARCHISO/airootfs/usr/share/applications/org.orchard.Install.desktop"
+  "$ARCHISO/airootfs/etc/xdg/autostart/org.orchard.LiveWelcome.desktop"
   "$ARCHISO/airootfs/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg"
   "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
   "$ARCHISO/airootfs/etc/systemd/system/macbook-background-setup.service"
+  "$ARCHISO/airootfs/etc/systemd/system/macbook-wifi-driver.service"
 )
 executable_overlay_paths=(
   /usr/local/bin/macbook-hardware-report
@@ -51,9 +60,11 @@ executable_overlay_paths=(
   /usr/lib/macbook-cachyos/background-setup
   /usr/lib/macbook-cachyos/build-rounded-corners
   /usr/lib/macbook-cachyos/firstboot
+  /usr/lib/macbook-cachyos/live-welcome
   /usr/lib/macbook-cachyos/patch-calamares
   /usr/lib/macbook-cachyos/plasma-layout-once
   /usr/lib/macbook-cachyos/setup-plasma
+  /usr/lib/macbook-cachyos/wifi-driver-setup
 )
 
 if [[ "${MACBOOK_REQUIRE_ROUNDED_SOURCE:-0}" == 1 ]]; then
@@ -112,6 +123,7 @@ for pkg in \
   ffmpegthumbs \
   kdegraphics-thumbnailers \
   keyd \
+  kdialog \
   kimageformats \
   kio-extras \
   power-profiles-daemon \
@@ -196,6 +208,29 @@ for expected_prebuild_setting in \
   }
 done
 
+ORCHARD_DARK_DEFAULTS="$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/defaults"
+for expected_dark_default in \
+  'ColorScheme=OrchardDark' \
+  'name=default' \
+  'theme=__aurorae__svg__OrchardTrafficLights'; do
+  grep -qxF "$expected_dark_default" "$ORCHARD_DARK_DEFAULTS" || {
+    echo "Orchard Dark global theme is missing: $expected_dark_default" >&2
+    fail=1
+  }
+done
+
+LIVE_WELCOME="$ARCHISO/airootfs/usr/lib/macbook-cachyos/live-welcome"
+for expected_welcome_setting in \
+  '/run/archiso' \
+  'Install Orchard Linux.desktop' \
+  'Install now' \
+  'Try Orchard first'; do
+  grep -qF "$expected_welcome_setting" "$LIVE_WELCOME" || {
+    echo "Live installer welcome is incomplete: $expected_welcome_setting" >&2
+    fail=1
+  }
+done
+
 for expected_prebuild_hook_line in \
   '# remove from airootfs!' \
   'Operation = Install' \
@@ -248,6 +283,10 @@ for copied_file in \
   /usr/share/color-schemes/OrchardDark.colors \
   /usr/share/color-schemes/OrchardLight.colors \
   /usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json \
+  /usr/share/plasma/look-and-feel/org.orchard.desktop/contents/defaults \
+  /usr/share/plasma/look-and-feel/org.orchard.dark.desktop/metadata.json \
+  /usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/defaults \
+  /usr/share/plasma/look-and-feel/org.orchard.dark.desktop/contents/splash/Splash.qml \
   /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg \
   /var/lib/macbook-cachyos/rounded-corners-build; do
   grep -qF "\"$copied_file\"" "$CALAMARES_PATCH" || {
@@ -305,6 +344,7 @@ else
     ffmpegthumbs \
     kdegraphics-thumbnailers \
     keyd \
+    kdialog \
     kimageformats \
     kio-extras \
     power-profiles-daemon \

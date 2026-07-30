@@ -69,6 +69,7 @@ EXECUTABLE_OVERLAY_PATHS=(
   /usr/lib/macbook-cachyos/background-setup
   /usr/lib/macbook-cachyos/build-rounded-corners
   /usr/lib/macbook-cachyos/firstboot
+  /usr/lib/macbook-cachyos/live-welcome
   /usr/lib/macbook-cachyos/patch-calamares
   /usr/lib/macbook-cachyos/plasma-layout-once
   /usr/lib/macbook-cachyos/setup-plasma
@@ -93,10 +94,11 @@ awk '
     paths[6] = "/usr/lib/macbook-cachyos/background-setup"
     paths[7] = "/usr/lib/macbook-cachyos/build-rounded-corners"
     paths[8] = "/usr/lib/macbook-cachyos/firstboot"
-    paths[9] = "/usr/lib/macbook-cachyos/patch-calamares"
-    paths[10] = "/usr/lib/macbook-cachyos/plasma-layout-once"
-    paths[11] = "/usr/lib/macbook-cachyos/setup-plasma"
-    paths[12] = "/usr/lib/macbook-cachyos/wifi-driver-setup"
+    paths[9] = "/usr/lib/macbook-cachyos/live-welcome"
+    paths[10] = "/usr/lib/macbook-cachyos/patch-calamares"
+    paths[11] = "/usr/lib/macbook-cachyos/plasma-layout-once"
+    paths[12] = "/usr/lib/macbook-cachyos/setup-plasma"
+    paths[13] = "/usr/lib/macbook-cachyos/wifi-driver-setup"
   }
   /^file_permissions=\($/ {
     in_permissions = 1
@@ -104,7 +106,7 @@ awk '
     next
   }
   in_permissions && /^\)$/ {
-    for (i = 1; i <= 12; i++) {
+    for (i = 1; i <= 13; i++) {
       print "  [\"" paths[i] "\"]=\"0:0:755\"" marker
     }
     in_permissions = 0
@@ -113,7 +115,7 @@ awk '
     next
   }
   in_permissions {
-    for (i = 1; i <= 12; i++) {
+    for (i = 1; i <= 13; i++) {
       prefix = "[\"" paths[i] "\"]="
       line = $0
       sub(/^[[:space:]]*/, "", line)

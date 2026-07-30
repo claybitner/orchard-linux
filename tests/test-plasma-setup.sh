@@ -25,6 +25,7 @@ touch \
   "$APPLICATIONS_DIR/org.kde.dolphin.desktop" \
   "$APPLICATIONS_DIR/firefox.desktop" \
   "$APPLICATIONS_DIR/com.shellyorg.shelly.desktop" \
+  "$APPLICATIONS_DIR/org.orchard.Install.desktop" \
   "$APPLICATIONS_DIR/org.orchard.Downloads.desktop" \
   "$APPLICATIONS_DIR/org.orchard.Trash.desktop" \
   "$WALLPAPER"
@@ -64,7 +65,10 @@ MACBOOK_TOUCHEGG_CONFIG="$ROOT/overlay/airootfs/usr/lib/macbook-cachyos/touchegg
 grep -qxF \
   "Exec=/usr/lib/macbook-cachyos/plasma-layout-once" \
   "$HOME_DIR/.config/autostart/macbook-plasma-layout.desktop"
-grep -qF -- '--group General --key ColorScheme OrchardLight' "$LOG"
+grep -qF -- '--group General --key ColorScheme OrchardDark' "$LOG"
+grep -qF \
+  -- '--group KDE --key LookAndFeelPackage org.orchard.dark.desktop' \
+  "$LOG"
 grep -qF -- '--group org.kde.kdecoration2 --key ButtonsOnLeft XIA' "$LOG"
 grep -qF -- '--key library org.kde.kwin.aurorae.v2' "$LOG"
 grep -qF -- '--group kwin --key Overview Ctrl+Up' "$LOG"
@@ -80,7 +84,9 @@ grep -qF \
 grep -qF -- '--group Round-Corners --key Size 12' "$LOG"
 grep -qF -- '--file kscreenlockerrc --group Greeter --group Wallpaper' "$LOG"
 grep -qF -- '--notify --file kscreenlockerrc --group Daemon --key Autolock --type bool false' "$LOG"
-grep -qF -- '--file ksplashrc --group KSplash --key Theme org.orchard.desktop' "$LOG"
+grep -qF \
+  -- '--file ksplashrc --group KSplash --key Theme org.orchard.dark.desktop' \
+  "$LOG"
 cmp \
   "$ROOT/overlay/airootfs/usr/lib/macbook-cachyos/touchegg.conf" \
   "$HOME_DIR/.config/touchegg/touchegg.conf"
@@ -101,6 +107,7 @@ MACBOOK_SYSTEM_WALLPAPER="$WALLPAPER" \
 grep -qF \
   'applications:org.kde.dolphin.desktop,applications:firefox.desktop' \
   "$LOG"
+grep -qF 'applications:org.orchard.Install.desktop' "$LOG"
 grep -qF 'applications:com.shellyorg.shelly.desktop' "$LOG"
 grep -qF "$WALLPAPER" "$LOG"
 grep -qF \

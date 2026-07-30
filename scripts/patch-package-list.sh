@@ -38,6 +38,7 @@ PACKAGES=(
   inter-font
   kdegraphics-thumbnailers
   keyd
+  kdialog
   kimageformats
   kio-extras
   papirus-icon-theme

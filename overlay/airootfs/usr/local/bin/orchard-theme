@@ -5,12 +5,16 @@ mode="${1:-}"
 case "$mode" in
   light)
     scheme=OrchardLight
+    look_and_feel=org.orchard.desktop
+    icon_theme=Papirus
     plasma_theme=breeze-light
     gtk_theme=Breeze
     ;;
   dark)
     scheme=OrchardDark
-    plasma_theme=breeze-dark
+    look_and_feel=org.orchard.dark.desktop
+    icon_theme=Papirus-Dark
+    plasma_theme=default
     gtk_theme=Breeze-Dark
     ;;
   *)
@@ -26,6 +30,8 @@ command -v kwriteconfig6 >/dev/null || {
 
 kwriteconfig6 --file kdeglobals --group General --key ColorScheme "$scheme"
 kwriteconfig6 --file kdeglobals --group General --key AccentColor "52,120,246"
+kwriteconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage "$look_and_feel"
+kwriteconfig6 --file kdeglobals --group Icons --key Theme "$icon_theme"
 kwriteconfig6 --file plasmarc --group Theme --key name "$plasma_theme"
 for gtk_version in 3.0 4.0; do
   kwriteconfig6 \

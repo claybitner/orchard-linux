@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Install Orchard Linux
+GenericName=System Installer
+Comment=Install Orchard Linux on this Mac
+Exec=/usr/local/bin/calamares-online.sh
+TryExec=/usr/local/bin/calamares-online.sh
+Icon=calamares
+Terminal=false
+StartupNotify=true
+Categories=System;Settings;
+Keywords=install;installer;Orchard;Linux;
+OnlyShowIn=KDE;
