@@ -66,24 +66,32 @@ for executable_path in \
   /usr/local/bin/macbook-hardware-report \
   /usr/local/bin/macbook-diagnostic-bundle \
   /usr/local/bin/macbook-optional-theme \
+  /usr/local/bin/orchard-theme \
   /usr/local/bin/orchard-trackpad \
+  /usr/lib/macbook-cachyos/background-setup \
   /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/lib/macbook-cachyos/patch-calamares \
-  /usr/lib/macbook-cachyos/setup-plasma \
-  /usr/lib/macbook-cachyos/plasma-layout-once; do
+  /usr/lib/macbook-cachyos/plasma-layout-once \
+  /usr/lib/macbook-cachyos/setup-plasma; do
   grep -qxF \
     "  [\"$executable_path\"]=\"0:0:755\" # orchard-linux: executable overlay" \
     "$TEST_ROOT/archiso/profiledef.sh"
 done
 [[ "$(grep -cF '# orchard-linux: executable overlay' \
-  "$TEST_ROOT/archiso/profiledef.sh")" -eq 9 ]]
+  "$TEST_ROOT/archiso/profiledef.sh")" -eq 11 ]]
 [[ "$(grep -cF '# orchard-linux: removed unconditional EXIT error trap' \
   "$TEST_ROOT/buildiso.sh")" -eq 1 ]]
 grep -qxF \
   'trap '\''trap_exit USR1 "$(gettext "An unknown error has occurred. Exiting...")"'\'' ERR' \
   "$TEST_ROOT/buildiso.sh"
 "$TEST_ROOT/buildiso.sh"
+grep -qxF '# remove from airootfs!' \
+  "$TEST_ROOT/archiso/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
+grep -qxF 'Exec = /usr/bin/bash /usr/lib/macbook-cachyos/prebuild-live-environment' \
+  "$TEST_ROOT/archiso/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
+[[ -L \
+  "$TEST_ROOT/archiso/airootfs/etc/systemd/system/graphical.target.wants/macbook-background-setup.service" ]]
 for data_path in \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \
   /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \

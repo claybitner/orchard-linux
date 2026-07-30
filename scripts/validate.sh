@@ -14,39 +14,46 @@ source "$SCRIPT_DIR/lib/packages.sh"
 
 fail=0
 required_files=(
+  "$ARCHISO/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
   "$ARCHISO/airootfs/etc/pacman.d/hooks/99-macbook-calamares.hook"
   "$ARCHISO/airootfs/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
   "$ARCHISO/airootfs/usr/local/bin/macbook-hardware-report"
   "$ARCHISO/airootfs/usr/local/bin/macbook-diagnostic-bundle"
   "$ARCHISO/airootfs/usr/local/bin/macbook-optional-theme"
+  "$ARCHISO/airootfs/usr/local/bin/orchard-theme"
   "$ARCHISO/airootfs/usr/local/bin/orchard-trackpad"
   "$ARCHISO/airootfs/etc/xdg/autostart/org.orchard.TrackpadApply.desktop"
   "$ARCHISO/airootfs/etc/environment.d/90-orchard-input.conf"
   "$ARCHISO/airootfs/usr/share/applications/org.orchard.Trackpad.desktop"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/90-no-suspend.conf"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/background-setup"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/build-rounded-corners"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/hid-apple.conf"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/keyd-macos.conf"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
+  "$ARCHISO/airootfs/usr/lib/macbook-cachyos/prebuild-live-environment"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/setup-plasma"
   "$ARCHISO/airootfs/usr/lib/macbook-cachyos/plasma-layout-once"
   "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json"
   "$ARCHISO/airootfs/usr/share/plasma/look-and-feel/org.orchard.desktop/contents/splash/Splash.qml"
   "$ARCHISO/airootfs/usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg"
   "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"
+  "$ARCHISO/airootfs/etc/systemd/system/macbook-background-setup.service"
 )
 executable_overlay_paths=(
   /usr/local/bin/macbook-hardware-report
   /usr/local/bin/macbook-diagnostic-bundle
   /usr/local/bin/macbook-optional-theme
+  /usr/local/bin/orchard-theme
   /usr/local/bin/orchard-trackpad
+  /usr/lib/macbook-cachyos/background-setup
   /usr/lib/macbook-cachyos/build-rounded-corners
   /usr/lib/macbook-cachyos/firstboot
   /usr/lib/macbook-cachyos/patch-calamares
-  /usr/lib/macbook-cachyos/setup-plasma
   /usr/lib/macbook-cachyos/plasma-layout-once
+  /usr/lib/macbook-cachyos/setup-plasma
 )
 
 if [[ "${MACBOOK_REQUIRE_ROUNDED_SOURCE:-0}" == 1 ]]; then
@@ -85,7 +92,11 @@ fi
 
 CALAMARES_PATCH="$ARCHISO/airootfs/usr/lib/macbook-cachyos/patch-calamares"
 FIRSTBOOT="$ARCHISO/airootfs/usr/lib/macbook-cachyos/firstboot"
+BACKGROUND_SETUP="$ARCHISO/airootfs/usr/lib/macbook-cachyos/background-setup"
+PREBUILD_LIVE="$ARCHISO/airootfs/usr/lib/macbook-cachyos/prebuild-live-environment"
 ROUNDED_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
+PREBUILD_HOOK="$ARCHISO/airootfs/etc/pacman.d/hooks/94-orchard-prebuild-live.hook"
+BACKGROUND_SERVICE_LINK="$ARCHISO/airootfs/etc/systemd/system/graphical.target.wants/macbook-background-setup.service"
 for pkg in \
   appmenu-gtk-module \
   base-devel \
@@ -118,11 +129,62 @@ for pkg in \
 done
 
 for expected_firstboot_setting in \
-  'flatpak remote-add' \
   '/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf' \
-  '/usr/lib/macbook-cachyos/build-rounded-corners'; do
+  'systemctl start --no-block' \
+  'Prebuilt rounded-corner plugins are missing'; do
   grep -qF "$expected_firstboot_setting" "$FIRSTBOOT" || {
     echo "First-boot integration is absent: $expected_firstboot_setting" >&2
+    fail=1
+  }
+done
+
+for forbidden_firstboot_work in \
+  'flatpak remote-add' \
+  '/usr/lib/macbook-cachyos/build-rounded-corners' \
+  'macbook-diagnostic-bundle'; do
+  if grep -qF "$forbidden_firstboot_work" "$FIRSTBOOT"; then
+    echo "Slow work remains in the boot-critical service: $forbidden_firstboot_work" >&2
+    fail=1
+  fi
+done
+
+for expected_background_setting in \
+  'build-rounded-corners' \
+  'flatpak remote-add' \
+  'macbook-diagnostic-bundle' \
+  'background-complete-v1'; do
+  grep -qF "$expected_background_setting" "$BACKGROUND_SETUP" || {
+    echo "Background setup integration is absent: $expected_background_setting" >&2
+    fail=1
+  }
+done
+
+if [[ ! -L "$BACKGROUND_SERVICE_LINK" ]] ||
+  [[ "$(readlink "$BACKGROUND_SERVICE_LINK")" != '../macbook-background-setup.service' ]]; then
+  echo "Background setup must be enabled by an explicit graphical.target symlink." >&2
+  fail=1
+fi
+
+for expected_prebuild_setting in \
+  'MACBOOK_ROUNDED_CORNERS_FORCE=1' \
+  'OrchardDark.colors' \
+  'OrchardLight.colors' \
+  '"$LIB_DIR/setup-plasma"' \
+  'Orchard live environment prebuilt.'; do
+  grep -qF "$expected_prebuild_setting" "$PREBUILD_LIVE" || {
+    echo "Live-environment prebuild is incomplete: $expected_prebuild_setting" >&2
+    fail=1
+  }
+done
+
+for expected_prebuild_hook_line in \
+  '# remove from airootfs!' \
+  'Operation = Install' \
+  'Target = kwin' \
+  'Target = kwin-x11' \
+  'Exec = /usr/bin/bash /usr/lib/macbook-cachyos/prebuild-live-environment'; do
+  grep -qxF "$expected_prebuild_hook_line" "$PREBUILD_HOOK" || {
+    echo "Build-only live-environment hook is incomplete: $expected_prebuild_hook_line" >&2
     fail=1
   }
 done
@@ -138,21 +200,35 @@ for expected_hook_line in \
 done
 
 for copied_file in \
+  /etc/skel/.config/autostart/macbook-plasma-layout.desktop \
+  /etc/skel/.config/kdeglobals \
+  /etc/skel/.config/kwinrc \
+  /etc/skel/.config/macbook-cachyos-defaults-v1 \
+  /etc/skel/.local/share/macbook-cachyos/plasma-layout-once \
+  /etc/skel/.local/share/macbook-cachyos/setup-plasma \
+  /etc/systemd/system/macbook-background-setup.service \
   /etc/systemd/system/macbook-firstboot.service \
   /etc/environment.d/90-orchard-input.conf \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \
   /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
+  /usr/lib/macbook-cachyos/background-setup \
   /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/lib/macbook-cachyos/hid-apple.conf \
   /usr/lib/macbook-cachyos/keyd-macos.conf \
+  /usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so \
+  /usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so \
+  /usr/local/bin/orchard-theme \
   /usr/local/bin/macbook-diagnostic-bundle \
   /usr/local/bin/orchard-trackpad \
   /etc/xdg/autostart/org.orchard.TrackpadApply.desktop \
   /usr/share/applications/org.orchard.Trackpad.desktop \
   /usr/share/applications/org.orchard.Downloads.desktop \
+  /usr/share/color-schemes/OrchardDark.colors \
+  /usr/share/color-schemes/OrchardLight.colors \
   /usr/share/plasma/look-and-feel/org.orchard.desktop/metadata.json \
-  /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg; do
+  /usr/share/wallpapers/macbook-cachyos/orchard-dusk.svg \
+  /var/lib/macbook-cachyos/rounded-corners-build; do
   grep -qF "\"$copied_file\"" "$CALAMARES_PATCH" || {
     echo "Installed-system overlay file not copied by Calamares patch: $copied_file" >&2
     fail=1
@@ -162,6 +238,17 @@ done
 if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' \
   "$CALAMARES_PATCH"; then
   echo "Calamares patch does not enable macbook-firstboot.service." >&2
+  fail=1
+fi
+if ! grep -qE '^[[:space:]]+- name: "macbook-background-setup\.service"$' \
+  "$CALAMARES_PATCH"; then
+  echo "Calamares patch does not enable macbook-background-setup.service." >&2
+  fail=1
+fi
+
+if ! grep -qxF 'TimeoutStartSec=60s' \
+  "$ARCHISO/airootfs/etc/systemd/system/macbook-firstboot.service"; then
+  echo "MacBook first-boot service lacks its boot-progress timeout." >&2
   fail=1
 fi
 

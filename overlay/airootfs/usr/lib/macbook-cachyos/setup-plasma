@@ -20,9 +20,9 @@ LOOK_AND_FEEL_DIR="${MACBOOK_LOOK_AND_FEEL_DIR:-/usr/share/plasma/look-and-feel/
 # Use only redistributable themes and fonts from the Arch/CachyOS repositories.
 if command -v plasma-apply-colorscheme >/dev/null &&
   [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
-  plasma-apply-colorscheme BreezeLight >/dev/null 2>&1 || true
+  plasma-apply-colorscheme OrchardLight >/dev/null 2>&1 || true
 fi
-kwriteconfig6 --file kdeglobals --group General --key ColorScheme BreezeLight
+kwriteconfig6 --file kdeglobals --group General --key ColorScheme OrchardLight
 kwriteconfig6 --file kdeglobals --group General --key AccentColor "52,120,246"
 if [[ -d /usr/share/icons/Papirus ]]; then
   kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus
@@ -325,9 +325,6 @@ mkdir -p "$AUTOSTART"
 # generic CachyOS welcome window on every login.
 rm -f "$AUTOSTART/cachyos-hello.desktop"
 LAYOUT_SCRIPT=/usr/lib/macbook-cachyos/plasma-layout-once
-if [[ -x "$HOME/.local/share/macbook-cachyos/plasma-layout-once" ]]; then
-  LAYOUT_SCRIPT="$HOME/.local/share/macbook-cachyos/plasma-layout-once"
-fi
 cat > "$AUTOSTART/macbook-plasma-layout.desktop" <<'EOF'
 [Desktop Entry]
 Type=Application
@@ -336,3 +333,4 @@ X-KDE-autostart-after=panel
 OnlyShowIn=KDE;
 EOF
 printf 'Exec=%s\n' "$LAYOUT_SCRIPT" >> "$AUTOSTART/macbook-plasma-layout.desktop"
+touch "$CFG/macbook-cachyos-defaults-v1"

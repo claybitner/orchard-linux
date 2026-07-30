@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="${MACBOOK_PREBUILD_ROOT:-}"
+LIB_DIR="$ROOT/usr/lib/macbook-cachyos"
+SKEL_DIR="$ROOT/etc/skel"
+SELF="$LIB_DIR/prebuild-live-environment"
+COLOR_SCHEME_DIR="$ROOT/usr/share/color-schemes"
+
+[[ -x "$LIB_DIR/build-rounded-corners" ]] || {
+  echo "Rounded-corner builder is missing from the live filesystem." >&2
+  exit 1
+}
+[[ -x "$LIB_DIR/setup-plasma" ]] || {
+  echo "Plasma setup helper is missing from the live filesystem." >&2
+  exit 1
+}
+[[ -x "$LIB_DIR/plasma-layout-once" ]] || {
+  echo "Plasma layout helper is missing from the live filesystem." >&2
+  exit 1
+}
+
+generate_color_scheme() {
+  local source="${1:?missing source scheme}"
+  local target="${2:?missing target scheme}"
+  local name="${3:?missing scheme name}"
+  local temporary
+
+  [[ -f "$source" ]] || {
+    echo "Base Plasma color scheme is missing: $source" >&2
+    exit 1
+  }
+  temporary="$(mktemp "${target}.XXXXXX")"
+  awk -v name="$name" '
+    /^Name=/ { print "Name=" name; next }
+    /^ColorScheme=/ { print "ColorScheme=" name; next }
+    /^DecorationFocus=/ { print "DecorationFocus=52,120,246"; next }
+    /^SelectionBackground=/ { print "SelectionBackground=52,120,246"; next }
+    { print }
+  ' "$source" > "$temporary"
+  chmod 0644 "$temporary"
+  mv -f -- "$temporary" "$target"
+}
+
+install -d -m 0755 "$COLOR_SCHEME_DIR"
+generate_color_scheme \
+  "$COLOR_SCHEME_DIR/BreezeLight.colors" \
+  "$COLOR_SCHEME_DIR/OrchardLight.colors" \
+  "Orchard Light"
+generate_color_scheme \
+  "$COLOR_SCHEME_DIR/BreezeDark.colors" \
+  "$COLOR_SCHEME_DIR/OrchardDark.colors" \
+  "Orchard Dark"
+
+MACBOOK_ROUNDED_CORNERS_FORCE=1 \
+  "$LIB_DIR/build-rounded-corners"
+
+install -d -m 0755 "$SKEL_DIR/.local/share/macbook-cachyos"
+install -m 0755 \
+  "$LIB_DIR/setup-plasma" \
+  "$SKEL_DIR/.local/share/macbook-cachyos/setup-plasma"
+install -m 0755 \
+  "$LIB_DIR/plasma-layout-once" \
+  "$SKEL_DIR/.local/share/macbook-cachyos/plasma-layout-once"
+
+HOME="$SKEL_DIR" "$LIB_DIR/setup-plasma" "$SKEL_DIR"
+
+required_outputs=(
+  "$COLOR_SCHEME_DIR/OrchardLight.colors"
+  "$COLOR_SCHEME_DIR/OrchardDark.colors"
+  "$SKEL_DIR/.config/kdeglobals"
+  "$SKEL_DIR/.config/kwinrc"
+  "$SKEL_DIR/.config/autostart/macbook-plasma-layout.desktop"
+  "$SKEL_DIR/.config/macbook-cachyos-defaults-v1"
+  "$ROOT/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so"
+  "$ROOT/usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so"
+  "$ROOT/var/lib/macbook-cachyos/rounded-corners-build"
+)
+
+for output in "${required_outputs[@]}"; do
+  if [[ ! -f "$output" ]]; then
+    echo "Orchard prebuild did not produce required file: $output" >&2
+    exit 1
+  fi
+done
+
+echo "Orchard live environment prebuilt."
+rm -f -- "$SELF"

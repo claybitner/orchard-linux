@@ -4,8 +4,8 @@
 
 - Repository: `CachyOS/CachyOS-Live-ISO`
 - Branch: `master`
-- Commit: `6a8f78c178c70c5a2ec46307d71a0566fe1d27b2`
-- Verified: 2026-07-28
+- Commit: `5de0e4c3fad800c0f351379989c31b86b65e02fe`
+- Verified: 2026-07-30
 - Supported profile: `desktop`
 
 The build intentionally checks concrete upstream paths and stops when they are
@@ -77,17 +77,25 @@ package-owned files before pacman runs. The patch:
 
 - installs Broadcom DKMS and headers in the target;
 - installs power-profiles-daemon, not TLP;
-- copies the MacBook services and diagnostics into the target.
+- copies the MacBook services and diagnostics into the target;
+- copies the pre-generated Orchard Light desktop defaults from `/etc/skel`;
+- copies both precompiled rounded-corner KWin plugins and their ABI marker;
+- installs Orchard Light and Orchard Dark colour schemes.
 
-The same hook extends `services-systemd.conf` to enable
-`macbook-firstboot.service`.
+The same hook extends `services-systemd.conf` to enable the boot-critical
+`macbook-firstboot.service` and low-priority
+`macbook-background-setup.service`. Expensive network, diagnostics, and
+rounded-corner ABI-repair work runs only in the latter, after the display
+manager is available.
 The service itself requires both `Apple Inc.` firmware vendor identification
 and a `MacBook*` product identifier before making hardware-specific changes.
 
-The patch was compared with `cachyos-calamares` version `3.4.2-4`. It verifies
-unique anchors from that package and fails rather than guessing if its
-structure changes. Whenever CachyOS changes those anchors, compare and refresh
-the patch before shipping an ISO.
+The patch was compared with `cachyos-calamares` source commit
+`f1c20a500e14448e36991f1b9d3ebae153827761`. Its `postInstallFiles` module copies
+individual files with `shutil.copy2`, so every prebuilt skeleton file is listed
+explicitly. The patch verifies unique anchors and fails rather than guessing if
+the structure changes. Whenever CachyOS changes those anchors, compare and
+refresh the patch before shipping an ISO.
 
 ## Package decisions
 

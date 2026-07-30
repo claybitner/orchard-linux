@@ -8,6 +8,7 @@ Before=display-manager.service
 Type=oneshot
 ExecStart=/usr/lib/macbook-cachyos/firstboot
 RemainAfterExit=yes
+TimeoutStartSec=60s
 
 [Install]
 WantedBy=multi-user.target

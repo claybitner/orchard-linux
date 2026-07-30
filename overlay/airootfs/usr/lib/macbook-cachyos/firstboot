@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 STATE_DIR=/var/lib/macbook-cachyos
-STATE_VERSION=5
+STATE_VERSION=6
 STATE_MARKER="$STATE_DIR/complete-v$STATE_VERSION"
 DISABLE_SUSPEND=0
 mkdir -p "$STATE_DIR"
@@ -27,21 +27,16 @@ if [[ "$vendor" != "Apple Inc." || "$product" != MacBook* ]]; then
   exit 0
 fi
 
-systemctl enable --now NetworkManager.service 2>/dev/null || true
-systemctl enable --now bluetooth.service 2>/dev/null || true
-systemctl enable --now thermald.service 2>/dev/null || true
-systemctl enable --now power-profiles-daemon.service 2>/dev/null || true
-systemctl enable --now fstrim.timer 2>/dev/null || true
-systemctl enable --now touchegg.service 2>/dev/null || true
-
-if command -v flatpak >/dev/null; then
-  timeout 30s flatpak remote-add \
-    --system \
-    --if-not-exists \
-    flathub \
-    https://dl.flathub.org/repo/flathub.flatpakrepo ||
-    echo "Flathub could not be configured yet; retry from Shelly when online." >&2
-fi
+runtime_units=(
+  NetworkManager.service
+  bluetooth.service
+  thermald.service
+  power-profiles-daemon.service
+  fstrim.timer
+  touchegg.service
+)
+systemctl enable "${runtime_units[@]}" 2>/dev/null || true
+systemctl start --no-block "${runtime_units[@]}" 2>/dev/null || true
 
 # Apply the macOS-style Command and Option layers only after Apple hardware has
 # been verified. The packaged source remains inert on non-Apple computers.
@@ -170,9 +165,10 @@ if grep -q 'Name="bcm5974"' /proc/bus/input/devices 2>/dev/null; then
     /etc/X11/xorg.conf.d/70-bcm5974-libinput.conf
 fi
 
-if [[ -x /usr/lib/macbook-cachyos/build-rounded-corners ]]; then
-  /usr/lib/macbook-cachyos/build-rounded-corners ||
-    echo "Rounded corners could not be built; Plasma will use square corners." >&2
+wayland_corners=/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so
+x11_corners=/usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so
+if [[ ! -f "$wayland_corners" || ! -f "$x11_corners" ]]; then
+  echo "Prebuilt rounded-corner plugins are missing; Plasma will use square corners." >&2
 fi
 
 # Install Plasma defaults for existing human users, and retain the script for
@@ -187,7 +183,9 @@ while IFS=: read -r user _ uid _ _ home shell; do
     install -m 0755 -o "$user" -g "$group" \
       /usr/lib/macbook-cachyos/plasma-layout-once \
       "$home/.local/share/macbook-cachyos/plasma-layout-once"
-    sudo -u "$user" /usr/lib/macbook-cachyos/setup-plasma "$home" || true
+    if [[ ! -e "$home/.config/macbook-cachyos-defaults-v1" ]]; then
+      sudo -u "$user" /usr/lib/macbook-cachyos/setup-plasma "$home" || true
+    fi
     if [[ "$DISABLE_SUSPEND" -eq 1 ]] && command -v kwriteconfig6 >/dev/null; then
       for profile in AC Battery LowBattery; do
         sudo -u "$user" HOME="$home" kwriteconfig6 \
@@ -213,6 +211,5 @@ while IFS=: read -r user _ uid _ _ home shell; do
 done < /etc/passwd
 
 macbook-hardware-report > "$STATE_DIR/report.txt" 2>&1 || true
-macbook-diagnostic-bundle "$STATE_DIR/diagnostics.tar.gz" >/dev/null 2>&1 || true
 touch "$STATE_DIR/complete"
 touch "$STATE_MARKER"

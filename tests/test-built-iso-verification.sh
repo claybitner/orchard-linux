@@ -13,6 +13,8 @@ write_success_log() {
   local log_file="${1:?missing log file}"
   local profile="${2:?missing profile}"
   cat > "$log_file" <<'EOF'
+Rounded corners built for KWin 6.4.3-1.
+Orchard live environment prebuilt.
 Writing to 'stdio:/tmp/out/macbook-cachyos.iso' completed successfully.
 ==> Done [Build ISO] macbook-cachyos.iso
 EOF

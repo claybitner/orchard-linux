@@ -1,0 +1,13 @@
+# remove from airootfs!
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = kwin
+Target = kwin-x11
+
+[Action]
+Description = Prebuilding the Orchard live desktop
+When = PostTransaction
+Depends = bash
+Exec = /usr/bin/bash /usr/lib/macbook-cachyos/prebuild-live-environment

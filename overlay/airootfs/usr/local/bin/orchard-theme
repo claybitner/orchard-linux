@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+mode="${1:-}"
+case "$mode" in
+  light)
+    scheme=OrchardLight
+    plasma_theme=breeze-light
+    gtk_theme=Breeze
+    ;;
+  dark)
+    scheme=OrchardDark
+    plasma_theme=breeze-dark
+    gtk_theme=Breeze-Dark
+    ;;
+  *)
+    echo "Usage: orchard-theme light|dark" >&2
+    exit 2
+    ;;
+esac
+
+command -v kwriteconfig6 >/dev/null || {
+  echo "kwriteconfig6 is required to switch Orchard themes." >&2
+  exit 1
+}
+
+kwriteconfig6 --file kdeglobals --group General --key ColorScheme "$scheme"
+kwriteconfig6 --file kdeglobals --group General --key AccentColor "52,120,246"
+kwriteconfig6 --file plasmarc --group Theme --key name "$plasma_theme"
+for gtk_version in 3.0 4.0; do
+  kwriteconfig6 \
+    --file "gtk-$gtk_version/settings.ini" \
+    --group Settings \
+    --key gtk-theme-name \
+    "$gtk_theme"
+done
+
+if command -v plasma-apply-colorscheme >/dev/null &&
+  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+  plasma-apply-colorscheme "$scheme" >/dev/null
+fi
+
+if command -v qdbus6 >/dev/null &&
+  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+  qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
+fi
+
+echo "Applied $scheme."

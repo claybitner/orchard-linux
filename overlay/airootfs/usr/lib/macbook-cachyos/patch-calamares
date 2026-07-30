@@ -117,10 +117,36 @@ FILES_BLOCK="$(cat <<'EOF'
   - "/etc/NetworkManager/conf.d/20-wifi-backend.conf"
   - "/etc/environment.d/90-orchard-input.conf"
   - "/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
+  - "/etc/skel/.config/autostart/macbook-plasma-layout.desktop"
+  - "/etc/skel/.config/baloofilerc"
+  - "/etc/skel/.config/dolphinrc"
+  - "/etc/skel/.config/environment.d/90-orchard-desktop.conf"
+  - "/etc/skel/.config/gtk-3.0/gtk.css"
+  - "/etc/skel/.config/gtk-3.0/settings.ini"
+  - "/etc/skel/.config/gtk-4.0/gtk.css"
+  - "/etc/skel/.config/gtk-4.0/settings.ini"
+  - "/etc/skel/.config/kcminputrc"
+  - "/etc/skel/.config/kdeglobals"
+  - "/etc/skel/.config/kglobalshortcutsrc"
+  - "/etc/skel/.config/krunnerrc"
+  - "/etc/skel/.config/kscreenlockerrc"
+  - "/etc/skel/.config/ksplashrc"
+  - "/etc/skel/.config/kwinrc"
+  - "/etc/skel/.config/macbook-cachyos-defaults-v1"
+  - "/etc/skel/.config/plasmarc"
+  - "/etc/skel/.config/touchegg/touchegg.conf"
+  - "/etc/skel/.local/share/dolphin/view_properties/global/.directory"
+  - "/etc/skel/.local/share/macbook-cachyos/plasma-layout-once"
+  - "/etc/skel/.local/share/macbook-cachyos/setup-plasma"
+  - "/etc/systemd/system/macbook-background-setup.service"
   - "/etc/systemd/system/macbook-firstboot.service"
   - "/etc/xdg/autostart/org.orchard.TrackpadApply.desktop"
+  - "/var/lib/macbook-cachyos/rounded-corners-build"
+  - "/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so"
+  - "/usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so"
   - "/usr/lib/macbook-cachyos/90-no-suspend.conf"
   - "/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf"
+  - "/usr/lib/macbook-cachyos/background-setup"
   - "/usr/lib/macbook-cachyos/build-rounded-corners"
   - "/usr/lib/macbook-cachyos/firstboot"
   - "/usr/lib/macbook-cachyos/gtk-traffic-lights.css"
@@ -133,7 +159,10 @@ FILES_BLOCK="$(cat <<'EOF'
   - "/usr/local/bin/macbook-diagnostic-bundle"
   - "/usr/local/bin/macbook-hardware-report"
   - "/usr/local/bin/macbook-optional-theme"
+  - "/usr/local/bin/orchard-theme"
   - "/usr/local/bin/orchard-trackpad"
+  - "/usr/share/color-schemes/OrchardDark.colors"
+  - "/usr/share/color-schemes/OrchardLight.colors"
   - "/usr/share/applications/org.orchard.Trackpad.desktop"
   - "/usr/share/applications/org.orchard.Trash.desktop"
   - "/usr/share/applications/org.orchard.Downloads.desktop"
@@ -164,6 +193,9 @@ SERVICES_BLOCK="$(cat <<'EOF'
    - name: "macbook-firstboot.service"
      action: "enable"
      mandatory: true
+   - name: "macbook-background-setup.service"
+     action: "enable"
+     mandatory: false
 EOF
 )"
 insert_before \
@@ -208,12 +240,23 @@ for package in \
 done
 
 for target_file in \
+  /etc/skel/.config/autostart/macbook-plasma-layout.desktop \
+  /etc/skel/.config/kdeglobals \
+  /etc/skel/.config/kwinrc \
+  /etc/skel/.config/macbook-cachyos-defaults-v1 \
+  /etc/skel/.local/share/macbook-cachyos/plasma-layout-once \
+  /etc/skel/.local/share/macbook-cachyos/setup-plasma \
   /etc/pacman.d/hooks/95-orchard-rounded-corners.hook \
+  /etc/systemd/system/macbook-background-setup.service \
   /etc/systemd/system/macbook-firstboot.service \
   /etc/xdg/autostart/org.orchard.TrackpadApply.desktop \
   /etc/environment.d/90-orchard-input.conf \
+  /var/lib/macbook-cachyos/rounded-corners-build \
+  /usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so \
+  /usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so \
   /usr/lib/macbook-cachyos/90-no-suspend.conf \
   /usr/lib/macbook-cachyos/70-bcm5974-libinput.conf \
+  /usr/lib/macbook-cachyos/background-setup \
   /usr/lib/macbook-cachyos/build-rounded-corners \
   /usr/lib/macbook-cachyos/firstboot \
   /usr/lib/macbook-cachyos/gtk-traffic-lights.css \
@@ -222,7 +265,10 @@ for target_file in \
   /usr/lib/macbook-cachyos/sddm-theme.conf.user \
   /usr/lib/macbook-cachyos/touchegg.conf \
   /usr/local/bin/macbook-diagnostic-bundle \
+  /usr/local/bin/orchard-theme \
   /usr/local/bin/orchard-trackpad \
+  /usr/share/color-schemes/OrchardDark.colors \
+  /usr/share/color-schemes/OrchardLight.colors \
   /usr/share/applications/org.orchard.Trackpad.desktop \
   /usr/share/applications/org.orchard.Trash.desktop \
   /usr/share/applications/org.orchard.Downloads.desktop \
@@ -239,6 +285,10 @@ done
 
 if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' "$SERVICES"; then
   echo "MacBook first-boot service is absent after patching." >&2
+  exit 1
+fi
+if ! grep -qE '^[[:space:]]+- name: "macbook-background-setup\.service"$' "$SERVICES"; then
+  echo "MacBook background setup service is absent after patching." >&2
   exit 1
 fi
 

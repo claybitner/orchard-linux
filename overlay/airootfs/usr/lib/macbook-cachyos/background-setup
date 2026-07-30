@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+STATE_DIR="${MACBOOK_STATE_DIR:-/var/lib/macbook-cachyos}"
+DMI_ROOT="${MACBOOK_DMI_ROOT:-/sys/class/dmi/id}"
+STATE_MARKER="$STATE_DIR/background-complete-v1"
+mkdir -p "$STATE_DIR"
+
+[[ -e "$STATE_MARKER" ]] && exit 0
+
+product="$(cat "$DMI_ROOT/product_name" 2>/dev/null || true)"
+vendor="$(cat "$DMI_ROOT/sys_vendor" 2>/dev/null || true)"
+if [[ "$vendor" != "Apple Inc." || "$product" != MacBook* ]]; then
+  touch "$STATE_MARKER"
+  exit 0
+fi
+
+# The ISO and its normal target install receive prebuilt plugins. If the online
+# installer pulled a newer KWin build, repair that ABI mismatch in the
+# background rather than holding up the display manager.
+if [[ -x /usr/lib/macbook-cachyos/build-rounded-corners ]]; then
+  /usr/lib/macbook-cachyos/build-rounded-corners ||
+    echo "Rounded corners could not be refreshed for the installed KWin ABI." >&2
+fi
+
+if command -v flatpak >/dev/null; then
+  timeout 30s flatpak remote-add \
+    --system \
+    --if-not-exists \
+    flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo ||
+    echo "Flathub could not be configured yet; retry from Shelly when online." >&2
+fi
+
+macbook-diagnostic-bundle "$STATE_DIR/diagnostics.tar.gz" >/dev/null 2>&1 || true
+touch "$STATE_MARKER"

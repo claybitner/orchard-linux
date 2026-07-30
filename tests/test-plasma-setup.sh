@@ -62,9 +62,9 @@ MACBOOK_TOUCHEGG_CONFIG="$ROOT/overlay/airootfs/usr/lib/macbook-cachyos/touchegg
   "$ROOT/overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma" "$HOME_DIR"
 
 grep -qxF \
-  "Exec=$HOME_DIR/.local/share/macbook-cachyos/plasma-layout-once" \
+  "Exec=/usr/lib/macbook-cachyos/plasma-layout-once" \
   "$HOME_DIR/.config/autostart/macbook-plasma-layout.desktop"
-grep -qF -- '--group General --key ColorScheme BreezeLight' "$LOG"
+grep -qF -- '--group General --key ColorScheme OrchardLight' "$LOG"
 grep -qF -- '--group org.kde.kdecoration2 --key ButtonsOnLeft XIA' "$LOG"
 grep -qF -- '--key library org.kde.kwin.aurorae.v2' "$LOG"
 grep -qF -- '--group kwin --key Overview Ctrl+Up' "$LOG"
@@ -90,6 +90,7 @@ cmp \
 grep -qxF 'GTK_MODULES=appmenu-gtk-module' \
   "$HOME_DIR/.config/environment.d/90-orchard-desktop.conf"
 [[ ! -e "$HOME_DIR/.config/autostart/cachyos-hello.desktop" ]]
+[[ -e "$HOME_DIR/.config/macbook-cachyos-defaults-v1" ]]
 
 HOME="$HOME_DIR" \
 PATH="$BIN_DIR:$PATH" \

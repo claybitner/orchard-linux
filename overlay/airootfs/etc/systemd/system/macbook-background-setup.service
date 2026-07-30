@@ -1,0 +1,13 @@
+[Unit]
+Description=MacBook CachyOS background setup
+Wants=NetworkManager.service
+After=macbook-firstboot.service NetworkManager.service display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/macbook-cachyos/background-setup
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=graphical.target

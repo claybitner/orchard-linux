@@ -72,6 +72,18 @@ grep -qxF \
   '  - "/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"' \
   "$MODULES/pacstrap.conf"
 grep -qxF \
+  '  - "/etc/skel/.config/kdeglobals"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/etc/skel/.config/macbook-cachyos-defaults-v1"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/etc/skel/.local/share/macbook-cachyos/plasma-layout-once"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/etc/systemd/system/macbook-background-setup.service"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
   '  - "/usr/lib/macbook-cachyos/90-no-suspend.conf"' \
   "$MODULES/pacstrap.conf"
 grep -qxF '  - "/usr/lib/macbook-cachyos/firstboot"' "$MODULES/pacstrap.conf"
@@ -80,6 +92,18 @@ grep -qxF \
   "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/usr/lib/macbook-cachyos/build-rounded-corners"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/lib/macbook-cachyos/background-setup"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/var/lib/macbook-cachyos/rounded-corners-build"' \
   "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/usr/lib/macbook-cachyos/gtk-traffic-lights.css"' \
@@ -101,6 +125,15 @@ grep -qxF \
   "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/usr/local/bin/orchard-trackpad"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/local/bin/orchard-theme"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/share/color-schemes/OrchardDark.colors"' \
+  "$MODULES/pacstrap.conf"
+grep -qxF \
+  '  - "/usr/share/color-schemes/OrchardLight.colors"' \
   "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/usr/share/applications/org.orchard.Trackpad.desktop"' \
@@ -127,5 +160,8 @@ grep -qxF \
   '  - "/usr/src/orchard/KDE-Rounded-Corners-46b943637f9c1313f2a489c1d4b5e7fa08e01fc1.tar.gz"' \
   "$MODULES/pacstrap.conf"
 grep -qxF '   - name: "macbook-firstboot.service"' "$MODULES/services-systemd.conf"
+grep -qxF \
+  '   - name: "macbook-background-setup.service"' \
+  "$MODULES/services-systemd.conf"
 
 echo "Calamares patch tests passed."

@@ -27,6 +27,8 @@ done
 }
 
 required_log_markers=(
+  "Rounded corners built for KWin"
+  "Orchard live environment prebuilt."
   "Writing to 'stdio:"
   "completed successfully."
   "==> Done [Build ISO]"

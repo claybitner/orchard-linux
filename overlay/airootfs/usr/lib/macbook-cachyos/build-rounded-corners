@@ -30,10 +30,14 @@ if [[ -z "$kwin_version" ]]; then
   exit 1
 fi
 
-marker="$STATE_DIR/rounded-corners-$kwin_version-$COMMIT"
+marker="$STATE_DIR/rounded-corners-build"
+expected_marker="$kwin_version $COMMIT"
 wayland_plugin=/usr/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so
 x11_plugin=/usr/lib/qt6/plugins/kwin-x11/effects/plugins/kwin4_effect_shapecorners.so
-if [[ -e "$marker" && -f "$wayland_plugin" && -f "$x11_plugin" ]]; then
+if [[ -f "$marker" ]] &&
+  [[ "$(cat "$marker")" == "$expected_marker" ]] &&
+  [[ -f "$wayland_plugin" ]] &&
+  [[ -f "$x11_plugin" ]]; then
   exit 0
 fi
 
@@ -73,5 +77,5 @@ build_and_install wayland
 build_and_install x11
 
 install -d -m 0755 "$STATE_DIR"
-touch "$marker"
+printf '%s\n' "$expected_marker" > "$marker"
 echo "Rounded corners built for KWin $kwin_version."

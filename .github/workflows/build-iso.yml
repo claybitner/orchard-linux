@@ -40,12 +40,15 @@ jobs:
               ./overlay/airootfs/usr/local/bin/macbook-hardware-report \
               ./overlay/airootfs/usr/local/bin/macbook-diagnostic-bundle \
               ./overlay/airootfs/usr/local/bin/macbook-optional-theme \
+              ./overlay/airootfs/usr/local/bin/orchard-theme \
               ./overlay/airootfs/usr/local/bin/orchard-trackpad \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/background-setup \
               ./overlay/airootfs/usr/lib/macbook-cachyos/build-rounded-corners \
               ./overlay/airootfs/usr/lib/macbook-cachyos/firstboot \
               ./overlay/airootfs/usr/lib/macbook-cachyos/patch-calamares \
-              ./overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma \
-              ./overlay/airootfs/usr/lib/macbook-cachyos/plasma-layout-once
+              ./overlay/airootfs/usr/lib/macbook-cachyos/plasma-layout-once \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/prebuild-live-environment \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma
           )
 
       - name: ShellCheck
@@ -58,12 +61,15 @@ jobs:
               ./overlay/airootfs/usr/local/bin/macbook-hardware-report \
               ./overlay/airootfs/usr/local/bin/macbook-diagnostic-bundle \
               ./overlay/airootfs/usr/local/bin/macbook-optional-theme \
+              ./overlay/airootfs/usr/local/bin/orchard-theme \
               ./overlay/airootfs/usr/local/bin/orchard-trackpad \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/background-setup \
               ./overlay/airootfs/usr/lib/macbook-cachyos/build-rounded-corners \
               ./overlay/airootfs/usr/lib/macbook-cachyos/firstboot \
               ./overlay/airootfs/usr/lib/macbook-cachyos/patch-calamares \
-              ./overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma \
-              ./overlay/airootfs/usr/lib/macbook-cachyos/plasma-layout-once
+              ./overlay/airootfs/usr/lib/macbook-cachyos/plasma-layout-once \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/prebuild-live-environment \
+              ./overlay/airootfs/usr/lib/macbook-cachyos/setup-plasma
           )
           shellcheck --severity=warning "${files[@]}"
 
@@ -74,6 +80,7 @@ jobs:
           ./tests/test-package-list.sh
           ./tests/test-calamares-patch.sh
           ./tests/test-plasma-setup.sh
+          ./tests/test-prebuilt-live-environment.sh
           ./tests/test-trackpad-settings.sh
           ./tests/test-upstream-build-integration.sh
 

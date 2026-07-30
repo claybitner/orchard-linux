@@ -166,7 +166,18 @@ The included setup provides:
   scroll distance without introducing discrete, choppy wheel steps
 - four-corner window clipping with a macOS-like 12px continuous curve
 - four virtual desktops
-- dark/light colour-scheme hook points
+- built-in Orchard Light and Orchard Dark colour schemes
+
+The ISO build pre-generates these settings in `/etc/skel`, so the live user and
+the user created by Calamares start with the same Orchard desktop. The
+session-dependent panel layout is applied the first time Plasma starts; it
+does not wait for the hardware setup service. Switch between the included
+schemes at any time with:
+
+```bash
+orchard-theme dark
+orchard-theme light
+```
 
 It does not redistribute WhiteSur, Apple icons, San Francisco fonts, or Apple
 wallpapers. The included traffic lights and wallpaper are original,
@@ -178,10 +189,11 @@ True bottom-corner clipping requires a KWin effect rather than an Aurorae
 decoration alone. The build therefore downloads the GPL-3.0
 `KDE-Rounded-Corners` source at the pinned commit
 `46b943637f9c1313f2a489c1d4b5e7fa08e01fc1`, verifies its SHA-256 checksum, and
-copies the source archive into the ISO. First boot compiles both the regular
-KWin and KWin X11 plugins against the exact installed KWin ABI. A pacman hook
-rebuilds them after KWin upgrades. This is an isolated third-party source build,
-not an AUR binary or an unverified package.
+precompiles both the regular KWin and KWin X11 plugins against the KWin ABI in
+the ISO. Calamares copies those exact plugins into the installed system. A
+pacman hook rebuilds them after KWin upgrades, and a low-priority background
+repair covers an online installation that pulls a newer KWin ABI. This is an
+isolated third-party source build, not an AUR binary or an unverified package.
 
 To disable the effect without removing it:
 
@@ -199,10 +211,11 @@ trackpad to libinput's unmodified defaults, remove
 `/etc/X11/xorg.conf.d/70-bcm5974-libinput.conf` and then log out or reboot.
 
 Shelly and Flatpak come from the signed CachyOS and Arch repositories,
-respectively. Flathub is added system-wide on first boot. Shelly's optional
-native Flatpak backend is not currently published by the configured
-repositories; Shelly can build it on demand, but the ISO does not disguise that
-local build as an official package.
+respectively. Flathub is added system-wide after the display manager starts, so
+an unavailable network cannot hold up the login screen. Shelly's optional native
+Flatpak backend is not currently published by the configured repositories;
+Shelly can build it on demand, but the ISO does not disguise that local build
+as an official package.
 
 The Command/Option remapping is installed only after first boot verifies Apple
 MacBook DMI data. To temporarily stop it, run
