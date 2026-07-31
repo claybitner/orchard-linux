@@ -18,6 +18,7 @@ for expected_setting in \
   "exclude='/usr/share/applications/org.orchard.Install.desktop'" \
   'MACBOOK_ROUNDED_CORNERS_FORCE=1' \
   'macbook-wifi-driver.service' \
+  '/var/lib/macbook-cachyos/complete-v7' \
   '/usr/lib/macbook-cachyos/firstboot'; do
   grep -qF "$expected_setting" "$REPAIR" || {
     echo "Installed-system repair is missing: $expected_setting" >&2

@@ -154,6 +154,7 @@ systemctl enable \
 # applying. Both helpers remain idempotent after these versioned markers return.
 rm -f -- \
   /var/lib/macbook-cachyos/complete-v6 \
+  /var/lib/macbook-cachyos/complete-v7 \
   /var/lib/macbook-cachyos/background-complete-v1
 /usr/lib/macbook-cachyos/firstboot
 

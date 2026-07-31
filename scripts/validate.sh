@@ -149,8 +149,12 @@ for pkg in \
 done
 
 for expected_firstboot_setting in \
+  'STATE_VERSION=7' \
   '/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf' \
   'HOME=/etc/skel /usr/lib/macbook-cachyos/setup-plasma /etc/skel' \
+  '"$home/.local"' \
+  '"$home/.local/share"' \
+  'sudo -u "$user" HOME="$home"' \
   'systemctl start --no-block' \
   'Prebuilt rounded-corner plugins are missing'; do
   grep -qF "$expected_firstboot_setting" "$FIRSTBOOT" || {
@@ -158,6 +162,11 @@ for expected_firstboot_setting in \
     fail=1
   }
 done
+
+if grep -qF '/usr/lib/macbook-cachyos/setup-plasma "$home" || true' "$FIRSTBOOT"; then
+  echo "First-boot integration hides installed-user profile failures." >&2
+  fail=1
+fi
 
 for expected_wifi_setting in \
   '14e4:43ba' \

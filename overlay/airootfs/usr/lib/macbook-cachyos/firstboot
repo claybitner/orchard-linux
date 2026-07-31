@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 STATE_DIR=/var/lib/macbook-cachyos
-STATE_VERSION=6
+STATE_VERSION=7
 STATE_MARKER="$STATE_DIR/complete-v$STATE_VERSION"
 DISABLE_SUSPEND=0
 mkdir -p "$STATE_DIR"
@@ -175,14 +175,22 @@ install -m 0755 \
 install -m 0755 \
   /usr/lib/macbook-cachyos/plasma-layout-once \
   /etc/skel/.local/share/macbook-cachyos/plasma-layout-once
-HOME=/etc/skel /usr/lib/macbook-cachyos/setup-plasma /etc/skel || true
+HOME=/etc/skel /usr/lib/macbook-cachyos/setup-plasma /etc/skel
 
-# Install Plasma defaults for existing human users. This is intentionally
-# best-effort.
+# Install Plasma defaults for existing human users. A profile failure must
+# leave the versioned state marker absent so systemd retries it on the next
+# boot instead of silently accepting a generic desktop.
 while IFS=: read -r user _ uid _ _ home shell; do
   if (( uid >= 1000 && uid < 60000 )) && [[ -d "$home" ]] && [[ "$shell" != */nologin ]]; then
     group="$(id -gn "$user")"
-    install -d -o "$user" -g "$group" "$home/.local/share/macbook-cachyos"
+    # install -d only applies -o/-g to its final operand. When the hierarchy
+    # does not exist yet, passing only the deepest directory leaves .local and
+    # .local/share owned by root and prevents the user from creating sibling
+    # application data such as Dolphin's view settings.
+    install -d -m 0755 -o "$user" -g "$group" \
+      "$home/.local" \
+      "$home/.local/share" \
+      "$home/.local/share/macbook-cachyos"
     install -m 0755 -o "$user" -g "$group" \
       /usr/lib/macbook-cachyos/setup-plasma \
       "$home/.local/share/macbook-cachyos/setup-plasma"
@@ -190,7 +198,8 @@ while IFS=: read -r user _ uid _ _ home shell; do
       /usr/lib/macbook-cachyos/plasma-layout-once \
       "$home/.local/share/macbook-cachyos/plasma-layout-once"
     if [[ ! -e "$home/.config/macbook-cachyos-defaults-v1" ]]; then
-      sudo -u "$user" /usr/lib/macbook-cachyos/setup-plasma "$home" || true
+      sudo -u "$user" HOME="$home" \
+        /usr/lib/macbook-cachyos/setup-plasma "$home"
     fi
     if [[ "$DISABLE_SUSPEND" -eq 1 ]] && command -v kwriteconfig6 >/dev/null; then
       for profile in AC Battery LowBattery; do
