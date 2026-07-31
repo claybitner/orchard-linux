@@ -150,6 +150,7 @@ done
 
 for expected_firstboot_setting in \
   '/usr/lib/macbook-cachyos/70-bcm5974-libinput.conf' \
+  'HOME=/etc/skel /usr/lib/macbook-cachyos/setup-plasma /etc/skel' \
   'systemctl start --no-block' \
   'Prebuilt rounded-corner plugins are missing'; do
   grep -qF "$expected_firstboot_setting" "$FIRSTBOOT" || {
@@ -260,12 +261,6 @@ for expected_hook_line in \
 done
 
 for copied_file in \
-  /etc/skel/.config/autostart/macbook-plasma-layout.desktop \
-  /etc/skel/.config/kdeglobals \
-  /etc/skel/.config/kwinrc \
-  /etc/skel/.config/macbook-cachyos-defaults-v1 \
-  /etc/skel/.local/share/macbook-cachyos/plasma-layout-once \
-  /etc/skel/.local/share/macbook-cachyos/setup-plasma \
   /etc/systemd/system/macbook-background-setup.service \
   /etc/systemd/system/macbook-firstboot.service \
   /etc/systemd/system/macbook-wifi-driver.service \
@@ -300,6 +295,11 @@ for copied_file in \
     fail=1
   }
 done
+
+if grep -q '^  - "/etc/skel/' "$CALAMARES_PATCH"; then
+  echo "Calamares patch copies /etc/skel before cachyos-kde-settings is installed." >&2
+  fail=1
+fi
 
 if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' \
   "$CALAMARES_PATCH"; then

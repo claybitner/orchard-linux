@@ -45,6 +45,16 @@ MACBOOK_CALAMARES_ROOT="$TEST_ROOT" \
 cp "$MODULES/pacstrap.conf" "$TEST_ROOT/pacstrap-first-pass"
 cp "$MODULES/services-systemd.conf" "$TEST_ROOT/services-first-pass"
 
+# Simulate the marked /etc/skel entries shipped by the previous ISO and verify
+# an upgrade reconciles them instead of leaving the package conflict in place.
+awk '
+  { print }
+  $0 == "  # macbook-cachyos target files" {
+    print "  - \"/etc/skel/.config/kdeglobals\""
+  }
+' "$MODULES/pacstrap.conf" > "$TEST_ROOT/pacstrap-with-legacy-skel"
+mv -f -- "$TEST_ROOT/pacstrap-with-legacy-skel" "$MODULES/pacstrap.conf"
+
 MACBOOK_CALAMARES_ROOT="$TEST_ROOT" \
   "$ROOT/overlay/airootfs/usr/lib/macbook-cachyos/patch-calamares"
 
@@ -72,15 +82,10 @@ grep -qxF '  - xorg-xinput' "$MODULES/pacstrap.conf"
 grep -qxF \
   '  - "/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"' \
   "$MODULES/pacstrap.conf"
-grep -qxF \
-  '  - "/etc/skel/.config/kdeglobals"' \
-  "$MODULES/pacstrap.conf"
-grep -qxF \
-  '  - "/etc/skel/.config/macbook-cachyos-defaults-v1"' \
-  "$MODULES/pacstrap.conf"
-grep -qxF \
-  '  - "/etc/skel/.local/share/macbook-cachyos/plasma-layout-once"' \
-  "$MODULES/pacstrap.conf"
+if grep -qF '  - "/etc/skel/' "$MODULES/pacstrap.conf"; then
+  echo "Calamares must not copy a prebuilt /etc/skel before packages are installed." >&2
+  exit 1
+fi
 grep -qxF \
   '  - "/etc/systemd/system/macbook-background-setup.service"' \
   "$MODULES/pacstrap.conf"

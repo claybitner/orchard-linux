@@ -165,8 +165,20 @@ if [[ ! -f "$wayland_corners" || ! -f "$x11_corners" ]]; then
   echo "Prebuilt rounded-corner plugins are missing; Plasma will use square corners." >&2
 fi
 
-# Install Plasma defaults for existing human users, and retain the script for
-# future users. This is intentionally best-effort.
+# Generate the future-user profile only after cachyos-kde-settings owns its
+# /etc/skel files. Copying the prebuilt live profile through Calamares would
+# make pacman reject those paths as unowned file conflicts.
+install -d -m 0755 /etc/skel/.local/share/macbook-cachyos
+install -m 0755 \
+  /usr/lib/macbook-cachyos/setup-plasma \
+  /etc/skel/.local/share/macbook-cachyos/setup-plasma
+install -m 0755 \
+  /usr/lib/macbook-cachyos/plasma-layout-once \
+  /etc/skel/.local/share/macbook-cachyos/plasma-layout-once
+HOME=/etc/skel /usr/lib/macbook-cachyos/setup-plasma /etc/skel || true
+
+# Install Plasma defaults for existing human users. This is intentionally
+# best-effort.
 while IFS=: read -r user _ uid _ _ home shell; do
   if (( uid >= 1000 && uid < 60000 )) && [[ -d "$home" ]] && [[ "$shell" != */nologin ]]; then
     group="$(id -gn "$user")"

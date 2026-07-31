@@ -112,33 +112,27 @@ EOF
 insert_before "$PACSTRAP" "postInstallFiles:" "$PACKAGE_MARKER" "$PACKAGE_BLOCK"
 
 FILES_MARKER="  # macbook-cachyos target files"
+
+# Older Orchard builds copied a prebuilt /etc/skel through postInstallFiles.
+# The online installer installs cachyos-kde-settings after pacstrap, so those
+# unowned files make pacman reject the desktop package. Reconcile that exact
+# marked legacy block before applying or validating the current block.
+if grep -qxF "$FILES_MARKER" "$PACSTRAP"; then
+  PACSTRAP_RECONCILED="$(mktemp "${PACSTRAP}.XXXXXX")"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == '  - "/etc/skel/'* ]] && continue
+    printf '%s\n' "$line"
+  done < "$PACSTRAP" > "$PACSTRAP_RECONCILED"
+  chmod 0644 "$PACSTRAP_RECONCILED"
+  mv -f -- "$PACSTRAP_RECONCILED" "$PACSTRAP"
+fi
+
 FILES_BLOCK="$(cat <<'EOF'
 
   # macbook-cachyos target files
   - "/etc/NetworkManager/conf.d/20-wifi-backend.conf"
   - "/etc/environment.d/90-orchard-input.conf"
   - "/etc/pacman.d/hooks/95-orchard-rounded-corners.hook"
-  - "/etc/skel/.config/autostart/macbook-plasma-layout.desktop"
-  - "/etc/skel/.config/baloofilerc"
-  - "/etc/skel/.config/dolphinrc"
-  - "/etc/skel/.config/environment.d/90-orchard-desktop.conf"
-  - "/etc/skel/.config/gtk-3.0/gtk.css"
-  - "/etc/skel/.config/gtk-3.0/settings.ini"
-  - "/etc/skel/.config/gtk-4.0/gtk.css"
-  - "/etc/skel/.config/gtk-4.0/settings.ini"
-  - "/etc/skel/.config/kcminputrc"
-  - "/etc/skel/.config/kdeglobals"
-  - "/etc/skel/.config/kglobalshortcutsrc"
-  - "/etc/skel/.config/krunnerrc"
-  - "/etc/skel/.config/kscreenlockerrc"
-  - "/etc/skel/.config/ksplashrc"
-  - "/etc/skel/.config/kwinrc"
-  - "/etc/skel/.config/macbook-cachyos-defaults-v1"
-  - "/etc/skel/.config/plasmarc"
-  - "/etc/skel/.config/touchegg/touchegg.conf"
-  - "/etc/skel/.local/share/dolphin/view_properties/global/.directory"
-  - "/etc/skel/.local/share/macbook-cachyos/plasma-layout-once"
-  - "/etc/skel/.local/share/macbook-cachyos/setup-plasma"
   - "/etc/systemd/system/macbook-background-setup.service"
   - "/etc/systemd/system/macbook-firstboot.service"
   - "/etc/systemd/system/macbook-wifi-driver.service"
@@ -251,12 +245,6 @@ for package in \
 done
 
 for target_file in \
-  /etc/skel/.config/autostart/macbook-plasma-layout.desktop \
-  /etc/skel/.config/kdeglobals \
-  /etc/skel/.config/kwinrc \
-  /etc/skel/.config/macbook-cachyos-defaults-v1 \
-  /etc/skel/.local/share/macbook-cachyos/plasma-layout-once \
-  /etc/skel/.local/share/macbook-cachyos/setup-plasma \
   /etc/pacman.d/hooks/95-orchard-rounded-corners.hook \
   /etc/systemd/system/macbook-background-setup.service \
   /etc/systemd/system/macbook-firstboot.service \
@@ -299,6 +287,11 @@ for target_file in \
     exit 1
   fi
 done
+
+if grep -qF '  - "/etc/skel/' "$PACSTRAP"; then
+  echo "Orchard /etc/skel files must be generated after desktop packages are installed." >&2
+  exit 1
+fi
 
 if ! grep -qE '^[[:space:]]+- name: "macbook-firstboot\.service"$' "$SERVICES"; then
   echo "MacBook first-boot service is absent after patching." >&2
